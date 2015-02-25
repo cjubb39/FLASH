@@ -1,0 +1,94 @@
+\documentclass[twocolumn]{article}
+
+\title{A Scheduler Accelerator for Linux Kernels}
+\author{
+	Chae Jubb \\
+	\texttt{ecj2122@columbia.edu} \\
+	Columbia University \\
+	New York, New York, United States
+	\and
+	Mark Aligbe \\
+	\texttt{ma2799@columbia.edu} \\
+	Columbia University \\
+	New York, New York, United States 
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Background}
+One of the major bottlenecks to server-class performance in interactive desktop environments is that of the context switch, and in particular scheduling.
+Depending on the complexity of the scheduling algorithm, picking a new task (which is sometimes also the current task) can consume thousands or tens of thousands of CPU cycles.
+Considering the scheduler is still called hundreds or a thousand times a second, this amounts to hundreds of thousands of lost cycles---potentially many more due to cache invalidation.
+
+While kernel code is very optimized, if we analyze processes simultaneously on hardware, we can achieve significant speedups in scheduling.
+Furthermore, we reduce the number of registers required as well as our cache footprint by offloading to hardware, thus increasing throughput of a re-scheduled process.
+We propose a hardware accelerator that monitors and records the state of all processes, and thus can perform real-time scheduling of processes in a desktop Linux environment. 
+
+
+\section*{Description}
+Our hardware accelerator will serve as the scheduler in a Linux system.
+It will operate in tick mode, like current schedulers, and will also implement the schedule() call via a DMA region that contains information used to identify the next process the accelerator chooses.
+We decide to interrupt rather than call from software so that we can be sure that we have the correct process to schedule next and not waste any precious CPU cycles while our accelerator is still updating.
+Our bookkeeping and algorithm to determine this will likely be CFS.
+
+To perform its task, our scheduler will need to know the active state of a process (sleeping, zombie, idle, running, etc) and the process runtime.
+To transfer over this information, we will include hooks into the system calls whenever a process state is changed, destroyed, or created.
+Uniquely, our implementation is targeted at desktop Linux, as opposed to real-time embedded distributions seen in prior research.
+Handling the dynamic, unbounded (from a realistic hardware perspective) number of tasks then creates a novel challenge.
+
+
+\section*{Conclusions Sought}
+When there are many processes, or when the states of the processes (e.g. runtime counters, nice values) cause traditional Linux schedulers to run for a long time, we expect our hardware scheduler to provide substantial performance improvement.
+In the case of few processes, the overhead of communicating with our device may prove greater than the cycles a software scheduler would have spent.
+In most desktop environments, there are hundreds of processes, and thus we expect the lookup our hardware accelerator will provide to be an improvement in our target environment.
+
+
+\section*{Testing and Evaluation}
+We will specifically stress test the two main functions of our hardware unit with two synthetic scenarios.
+The first is meant to evaluate the performance of switching between tasks.
+This will be accomplished by timing the latency of switching between many tasks, each running for very short period of times.
+The scheduler will be forced to rapidly change tasks as well as handle processes terminating before the time-tick.
+
+The second directed test will consist of stress testing with computationally intensive and long running programs.
+The results of this test will determine if the accelerator is quick at rescheduling the same task through successive time-ticks.
+To determine the efficacy of our solution, we will run CPU intensive benchmarks like Prime95 to determine if we achieve the desired throughput increase of a CPU intensive application.
+
+
+\section*{Required Resources}
+To evaluate the performance of our hardware scheduler, we will need an FPGA with an integrated x86 or ARM compliant processor and the capability for the custom hardware to communicate with the processor and memory.
+Some examples are the Altera Cyclone family of devices and Xilinx Zynq-7000 family of devices. We will also need the tools used to program the devices, including cabling and vendor tools.
+
+For designing the software and hardware, we will need the freely available Linux kernel source, as well as any vendor specific IDE like Altera Quartus or Xilinx ISE.
+
+
+\section*{Anticipated Timeline}
+\begin{description}
+\item[2/23] System architecture defined
+\item[3/09] Interrupt framework in place
+\item[3/23] Scheduler complete -- Milestone 1
+\item[4/06] System fully integrated
+\item[4/20] Debugging and testing complete -- Milestone 2
+\end{description}
+
+
+\section*{Selected Related Works}
+\renewcommand{\theenumi}{[\arabic{enumi}]}
+\begin{enumerate}
+\item Nakano, T.; Utama, A.; Itabashi, M.; Shiomi, A.; Imai, M., ``Hardware implementation of a real-time operating system,'' TRON Project International Symposium, 1995., Proceedings of the 12th , vol., no., pp.34,42, 28 Nov-2 Dec 1995
+
+\item Morton, A; Loucks, W. M., ``A hardware/software kernel for system on chip designs,'' ACM Symposium on Applied Computing, 2004., (SAC ’04), pages 869--875, 2004.
+
+\item André C. Nácul, Francesco Regazzoni, and Marcello Lajolo. 2007. Hardware scheduling support in SMP architectures. In Proceedings of the conference on Design, automation and test in Europe (DATE '07). EDA Consortium, San Jose, CA, USA, 642--647.
+
+\item Pramote Kuacharoen, Mohamed A. Shalan, and Vincent J. Mooney III. A configurable hardware scheduler for real-time systems. In in Proceedings of the International Conference on Engineering of Reconfigurable Systems and Algorithms, pages 96--101. CSREA Press, 2003.
+
+\item S. Park, D. sun Hong, and S.-I. Chae.  A Hardware Operating System Kernel for Multi-Processor Systems. IEICE, 5(9), 2008.
+
+\item Weibin Sun, Robert Ricci, Matthew L. Curry.  GPUstore: Harnessing GPU Computing for Storage Systems in the OS Kernel.  SYSTOR 2012.
+
+\end{enumerate}
+
+
+\end{document}
