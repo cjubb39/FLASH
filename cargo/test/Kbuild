@@ -1,0 +1,3 @@
+obj-m := flash.o
+
+ccflags-y := -I$(QSIM)/include
