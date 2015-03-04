@@ -6,18 +6,12 @@
 
 #include "flash_sched.h"
 
-typedef struct {
-	flash_pid_t pid;
-	flash_pri_t pri;
-	flash_state_t state;
-} flash_task_t;
-
 #ifndef TASK_QUEUE_SIZE
 #define TASK_QUEUE_SIZE 128
 #endif
 
 #ifndef WAIT_PER_TICK
-#define WAIT_PER_TICK 32
+#define WAIT_PER_TICK 64
 #endif
 
 #define PID_POISON 0
@@ -44,10 +38,14 @@ SC_MODULE(flash) {
 	sc_in <flash_pri_t>   change_pri;
 	sc_in <flash_state_t> change_state;
 
+	void initialize();
 	void schedule();
 	void tick();
 
 	SC_CTOR(flash) {
+		SC_CTHREAD(initialize, clk.pos());
+		reset_signal_is(rst, false);
+
 		SC_CTHREAD(tick, clk.pos());
 		reset_signal_is(rst, false);
 
@@ -56,7 +54,10 @@ SC_MODULE(flash) {
 	}
 
 	private:
+	sc_signal<bool> init_done;
+
 	uint32_t cur_task;
+	uint32_t end_queue;
 	flash_task_t queue[TASK_QUEUE_SIZE];
 
 };

@@ -6,6 +6,9 @@
 
 #include "flash_sched.h"
 
+#define TASKS_TO_SEND 128
+#define TASKS_TO_READ 1024
+
 SC_MODULE(flash_tb) {
 	sc_in<bool> clk;
 	sc_in<bool> rst;

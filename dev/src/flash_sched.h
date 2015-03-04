@@ -33,4 +33,11 @@
 typedef uint32_t flash_pid_t;
 typedef uint8_t  flash_pri_t;
 typedef uint16_t flash_state_t;
+
+typedef struct {
+	flash_pid_t pid;
+	flash_pri_t pri;
+	flash_state_t state;
+} flash_task_t;
+
 #endif
