@@ -2,6 +2,7 @@
 
 #include "flash.h"
 #include "flash_tb.h"
+#include "flash_sched.h"
 
 int sc_main(int, char**) {
 	sc_clock        clk ("clk", 10, SC_NS);	
@@ -11,20 +12,20 @@ int sc_main(int, char**) {
 	sc_signal<bool>     operational;
 
 	/* schedule requests */
-	sc_signal<bool>     sched_req;
-	sc_signal <bool>    sched_grant;
-	sc_signal<uint32_t> next_process;
+	sc_signal<bool>        sched_req;
+	sc_signal<bool>        sched_grant;
+	sc_signal<flash_pid_t> next_process;
 
 	/* tick command */
 	sc_signal<bool> tick_req;
 	sc_signal<bool> tick_grant;
 
 	/* process update request */
-	sc_signal<bool>     change_req;
-	sc_signal<bool>     change_grant;
-	sc_signal<uint32_t> change_pid;
-	sc_signal<uint8_t>  change_pri;
-	sc_signal<uint8_t>  change_state;
+	sc_signal<bool>          change_req;
+	sc_signal<bool>          change_grant;
+	sc_signal<flash_pid_t>   change_pid;
+	sc_signal<flash_pri_t>   change_pri;
+	sc_signal<flash_state_t> change_state;
 
 	flash    dut("dut");
 	flash_tb tb("tb");

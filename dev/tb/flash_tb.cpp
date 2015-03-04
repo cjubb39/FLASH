@@ -1,11 +1,12 @@
 #include "flash_tb.h"
 
 void flash_tb::source() {
-	wait();
-
 	flash_rst.write(false);
 	wait();
 	flash_rst.write(true);
+
+	/* send new process */
+
 
 	while (true) {
 		wait();
