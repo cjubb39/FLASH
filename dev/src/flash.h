@@ -39,14 +39,18 @@ SC_MODULE(flash) {
 	sc_in <flash_state_t> change_state;
 
 	void initialize();
-	void schedule();
 	void tick();
+	void process_change();
+	void schedule();
 
 	SC_CTOR(flash) {
 		SC_CTHREAD(initialize, clk.pos());
 		reset_signal_is(rst, false);
 
 		SC_CTHREAD(tick, clk.pos());
+		reset_signal_is(rst, false);
+
+		SC_CTHREAD(process_change, clk.pos());
 		reset_signal_is(rst, false);
 
 		SC_CTHREAD(schedule, clk.pos());

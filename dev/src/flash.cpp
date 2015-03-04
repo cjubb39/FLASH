@@ -34,7 +34,7 @@ void flash::tick() {
 	}
 }
 
-void flash::schedule() {
+void flash::process_change() {
 	change_grant.write(false);
 	do { wait(); }
 	while (!init_done.read());
@@ -50,6 +50,15 @@ void flash::schedule() {
 		do { wait(); }
 		while (change_req.read());
 		change_grant.write(false);
+		wait();
+	}
+}
+
+void flash::schedule() {
+	do { wait(); }
+	while (!init_done.read());
+
+	while (true) {
 		wait();
 	}
 }
