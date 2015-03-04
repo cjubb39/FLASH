@@ -6,8 +6,13 @@
 
 #include "flash_sched.h"
 
-#define TASKS_TO_SEND 128
-#define TASKS_TO_READ 1024
+#ifndef TASKS_TO_SEND
+#error "TASKS_TO_SEND not defined"
+#endif
+
+#ifndef TASKS_TO_READ
+#error "TASKS_TO_READ not defined"
+#endif
 
 SC_MODULE(flash_tb) {
 	sc_in<bool> clk;

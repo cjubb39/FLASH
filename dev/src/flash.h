@@ -7,11 +7,11 @@
 #include "flash_sched.h"
 
 #ifndef TASK_QUEUE_SIZE
-#define TASK_QUEUE_SIZE 128
+#error "TASK_QUEUE_SIZE not defined"
 #endif
 
 #ifndef WAIT_PER_TICK
-#define WAIT_PER_TICK 64
+#error "WAIT_PER_TICK not defined"
 #endif
 
 #define PID_POISON 0

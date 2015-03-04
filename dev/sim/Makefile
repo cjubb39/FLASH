@@ -7,7 +7,10 @@ LIBDIR = -L. -L$(SYSTEMC)/lib-$(TARGET_ARCH)
 
 INCDIR = -I../src -I../tb -I$(SYSTEMC)/include -I$(TLM)/include/tlm
 
-CFLAGS := #-Wall
+CFLAGS ?=
+include Makefile.params # after CFLAGS defined
+
+PARAMS_FILE=.params
 
 TARGET := flash 
 VPATH := ../src:../tb
@@ -28,7 +31,12 @@ $(TARGET): $(OBJS)
 .c.o:
 	$(CC) $(CFLAGS) ${INCDIR} -c $<
 
-$(OBJS): $(HDRS)
+$(OBJS): $(HDRS) $(PARAMS_FILE)
+
+.PHONY: force
+$(PARAMS_FILE): force
+	@echo '$(CFLAGS)' | cmp -s $@ || echo '$(CFLAGS)' > $@
+
 
 clean:
 	rm -f *.o $(TARGET) *.dsn *.trn *.vcd
