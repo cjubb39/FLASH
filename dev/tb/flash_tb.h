@@ -32,16 +32,25 @@ SC_MODULE(flash_tb) {
 	sc_out<flash_pri_t>   change_pri;
 	sc_out<flash_state_t> change_state;
 
+	void load();
 	void source();
 	void sink();
 
 	SC_CTOR(flash_tb) {
+		SC_CTHREAD(load, clk.pos());
+		reset_signal_is(rst, false);
+
 		SC_CTHREAD(source, clk.pos());
 		reset_signal_is(rst, false);
 		
 		SC_CTHREAD(sink, clk.pos());
 		reset_signal_is(rst, false);
 	}
+
+	private:
+	sc_signal<bool> dut_init_done;
+	sc_signal<bool> tick_done;
+	sc_signal<bool> sched_done;
 };
 #endif
 

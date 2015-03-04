@@ -14,7 +14,7 @@ void flash::initialize() {
 
 void flash::tick() {
 	unsigned i = 0;
-	tick_req.write(false);
+	tick_req_internal.write(false);
 	do { wait(); }
 	while (!init_done.read());
 
@@ -23,14 +23,10 @@ void flash::tick() {
 			wait();
 		}
 
-		next_process.write(queue[cur_task].pid);
-		tick_req.write(true);
+		tick_req_internal.write(true);
 		do { wait(); }
-		while (!tick_grant.read());
-		tick_req.write(false);
-		next_process.write(PID_POISON);
-
-		cur_task = (cur_task + 1) % end_queue;
+		while (!tick_grant_internal.read());
+		tick_req_internal.write(false);
 	}
 }
 
@@ -55,11 +51,52 @@ void flash::process_change() {
 }
 
 void flash::schedule() {
+	flash_pid_t next_proc_pid;
+
+	tick_rst.write(false);
+	tick_grant_internal.write(false);
+	tick_req.write(false);
 	do { wait(); }
 	while (!init_done.read());
+	tick_rst.write(true);
 
 	while (true) {
-		wait();
+		do { wait(); }
+		while (!tick_req_internal.read() && !sched_req.read());
+
+		/* decide what's next */
+		next_proc_pid = queue[cur_task].pid;
+		cur_task = (cur_task + 1) % end_queue;
+
+		if (tick_req_internal.read()) {
+			/* four phase handshake (internal) */
+			tick_grant_internal.write(true);
+			do { wait(); }
+			while (tick_req_internal.read());
+			tick_grant_internal.write(false);
+
+			/* four phase external */
+			tick_req.write(true);
+			next_process.write(next_proc_pid);
+			do { wait(); }
+			while (!tick_grant.read());
+			tick_req.write(false);
+			do { wait(); }
+			while (tick_grant.read());
+
+		} else { /* sched_req.read() */
+			/* reset tick */
+			tick_rst.write(false);
+
+			sched_grant.write(true);
+			next_process.write(next_proc_pid);
+			do { wait(); }
+			while (sched_req.read());
+			sched_grant.write(false);
+
+			/* turn start tick again */
+			tick_rst.write(true);
+		}
 	}
 }
 

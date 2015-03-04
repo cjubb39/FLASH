@@ -48,7 +48,7 @@ SC_MODULE(flash) {
 		reset_signal_is(rst, false);
 
 		SC_CTHREAD(tick, clk.pos());
-		reset_signal_is(rst, false);
+		reset_signal_is(tick_rst, false);
 
 		SC_CTHREAD(process_change, clk.pos());
 		reset_signal_is(rst, false);
@@ -59,6 +59,9 @@ SC_MODULE(flash) {
 
 	private:
 	sc_signal<bool> init_done;
+	sc_signal<bool> tick_req_internal;
+	sc_signal<bool> tick_grant_internal;
+	sc_signal<bool> tick_rst;
 
 	uint32_t cur_task;
 	uint32_t end_queue;

@@ -1,7 +1,8 @@
 #include "flash_tb.h"
 
-void flash_tb::source() {
-	flash_rst.write(false);
+/* load processes */
+void flash_tb::load() {
+	dut_init_done.write(false);
 	wait();
 	flash_rst.write(true);
 	wait(); wait();
@@ -27,18 +28,48 @@ void flash_tb::source() {
 
 	cout << "done sending proc" << endl;
 
+	dut_init_done.write(true);
+
 	while (true) {
 		wait();
 	}
 }
 
-/* readback */
+/* sched requests */
+void flash_tb::source() {
+	sched_done.write(false);
+	do { wait(); }
+	while (!dut_init_done.read());
+
+	unsigned i, j;
+	flash_pid_t pid;
+
+	for (i = 0; i < TASKS_TO_READ; ++i) {
+		sched_req.write(true);
+		do { wait(); }
+		while (!sched_grant.read());
+		sched_req.write(false);
+		pid = next_process.read();
+		do { wait(); }
+		while (sched_grant.read());
+
+		cout << "SCHED: asked to run: " << pid << endl;
+		wait();
+		for (j = 0; j < 256; ++j)
+			wait();
+	}
+
+	sc_stop();
+}
+
+/* handle tick */
 void flash_tb::sink() {
+	tick_done.write(false);
 	wait();
 
 	unsigned i;
 	flash_pid_t pid;
-	for (i = 0; i < TASKS_TO_READ; ++i) {
+	while (true) {
 		do { wait(); }
 		while (!tick_req.read());
 		tick_grant.write(true);
@@ -47,10 +78,8 @@ void flash_tb::sink() {
 		while (tick_req.read());
 		tick_grant.write(false);
 
-		cout << "asked to run: " << pid << endl;
+		cout << "TICK:  asked to run: " << pid << endl;
 		wait();
 	}
-
-	sc_stop();
 }
 
