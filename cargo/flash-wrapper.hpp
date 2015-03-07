@@ -7,30 +7,30 @@ extern "C" {
 
 #include <flex_channels.hpp>
 
-#include "flash.hpp"
+#include "flash.h"
 
 SC_MODULE(flash_wrapper) {
   sc_in<bool> clk; // clock
   sc_in<bool> rst; // reset
   sc_out<bool> rst_dut; // reset DUT
 
-  // DMA requests interface
-  sc_in<unsigned>   rd_index;   // array index
-  sc_in<unsigned>   rd_length;
-  sc_in<bool>       rd_request; // transaction request
-  sc_out<bool>      rd_grant;   // transaction grant
+  // // DMA requests interface
+  // sc_in<unsigned>   rd_index;   // array index
+  // sc_in<unsigned>   rd_length;
+  // sc_in<bool>       rd_request; // transaction request
+  // sc_out<bool>      rd_grant;   // transaction grant
 
-  // DMA requests interface
-  sc_in<unsigned>   wr_index;   // array index
-  sc_in<unsigned>   wr_length;
-  sc_in<bool>       wr_request; // transaction request
-  sc_out<bool>      wr_grant;   // transaction grant
+  // // DMA requests interface
+  // sc_in<unsigned>   wr_index;   // array index
+  // sc_in<unsigned>   wr_length;
+  // sc_in<bool>       wr_request; // transaction request
+  // sc_out<bool>      wr_grant;   // transaction grant
 
-  /* DMA */
-  put_initiator<unsigned long long> out_phys_addr;
-  put_initiator<unsigned long> out_len;
-  put_initiator<bool> out_write;
-  put_initiator<bool> out_start;
+  // /* DMA */
+  // put_initiator<unsigned long long> out_phys_addr;
+  // put_initiator<unsigned long> out_len;
+  // put_initiator<bool> out_write;
+  // put_initiator<bool> out_start;
 
   sc_out<unsigned> conf_size;
   sc_out<bool>     conf_done;
@@ -41,9 +41,9 @@ SC_MODULE(flash_wrapper) {
   void iowrite32(const struct io_req *req, struct io_rsp *rsp);
   void ioread32(struct io_req *req, struct io_rsp *rsp);
 
-  void drive();
-  void copy_from_dram(u64 index, unsigned length);
-  void copy_to_dram(u64 index, unsigned length);
+  // void drive();
+  // void copy_from_dram(u64 index, unsigned length);
+  // void copy_to_dram(u64 index, unsigned length);
 
   void io();
   void start();

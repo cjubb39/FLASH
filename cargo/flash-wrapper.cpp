@@ -27,7 +27,7 @@ void flash_wrapper::ioread32(struct io_req *req, struct io_rsp *rsp)
 		rsp->val = conf_size.read();
 		break;
 	case FLASH_REG_MAX_SIZE:
-		rsp->val = IMG_NUM_COLS * IMG_NUM_ROWS * sizeof(u16) + (IMG_NUM_ROWS - 2 * PAD) * (IMG_NUM_COLS - 2 * PAD) * sizeof(rgb_pixel);
+		rsp->val = 1024; //IMG_NUM_COLS * IMG_NUM_ROWS * sizeof(u16) + (IMG_NUM_ROWS - 2 * PAD) * (IMG_NUM_COLS - 2 * PAD) * sizeof(rgb_pixel);
 		break;
 	case FLASH_REG_ID:
 		rsp->val = flash->dev.id;
@@ -71,26 +71,26 @@ void flash_wrapper::iowrite32(const struct io_req *req, struct io_rsp *rsp)
 	}
 }
 
-void flash_wrapper::copy_from_dram(u64 index, unsigned length)
-{
-	obj_dbg(&flash->dev.obj, "%s\n", __func__);
+// void flash_wrapper::copy_from_dram(u64 index, unsigned length)
+// {
+// 	obj_dbg(&flash->dev.obj, "%s\n", __func__);
 
-	/* Byte address */
-	out_phys_addr.put(dma_phys_addr_src + (index * sizeof(u16)));
-	/* Number of DMA token (templated type). u16 for flash */
-	out_len.put(length);
-	out_write.put(false);
-	out_start.put(true);
-}
+// 	/* Byte address */
+// 	out_phys_addr.put(dma_phys_addr_src + (index * sizeof(u16)));
+// 	/* Number of DMA token (templated type). u16 for flash */
+// 	out_len.put(length);
+// 	out_write.put(false);
+// 	out_start.put(true);
+// }
 
-void flash_wrapper::copy_to_dram(u64 index, unsigned length)
-{
-	obj_dbg(&flash->dev.obj, "%s\n", __func__);
-	out_phys_addr.put(dma_phys_addr_dst + (index * sizeof(u16)));
-	out_len.put(length);
-	out_write.put(true);
-	out_start.put(true);
-}
+// void flash_wrapper::copy_to_dram(u64 index, unsigned length)
+// {
+// 	obj_dbg(&flash->dev.obj, "%s\n", __func__);
+// 	out_phys_addr.put(dma_phys_addr_dst + (index * sizeof(u16)));
+// 	out_len.put(length);
+// 	out_write.put(true);
+// 	out_start.put(true);
+// }
 
 void flash_wrapper::start()
 {
@@ -100,64 +100,65 @@ void flash_wrapper::start()
 	rst_dut.write(true);
 
 	for (;;) {
-		start_fifo.get();
-		obj_dbg(&flash->dev.obj, "CTL start\n");
-		drive();
-		obj_dbg(&flash->dev.obj, "FLASH done\n");
+		wait();
+		// start_fifo.get();
+		// obj_dbg(&flash->dev.obj, "CTL start\n");
+		// drive();
+		// obj_dbg(&flash->dev.obj, "FLASH done\n");
 	}
 }
 
-void flash_wrapper::drive()
-{
-	for (;;) {
-		do {
-			wait();
-		} while (!rd_request.read() && !wr_request.read() && !flash_done.read())
-			;
-		if (flash_done.read()) {
-			rst_dut.write(false);
-			wait();
-			rst_dut.write(true);
-			// Set bits 5:4 to "10" -> accelerator done
-		        status_reg &= ~STATUS_RUN;
-			status_reg |= STATUS_DONE;
-			device_sync_irq_raise(&flash->dev);
-			break;
-		}
-		if (rd_request.read()) {
-			unsigned index = rd_index.read();
-			unsigned length = rd_length.read();
+// void flash_wrapper::drive()
+// {
+// 	for (;;) {
+// 		do {
+// 			wait();
+// 		} while (!rd_request.read() && !wr_request.read() && !flash_done.read())
+// 			;
+// 		if (flash_done.read()) {
+// 			rst_dut.write(false);
+// 			wait();
+// 			rst_dut.write(true);
+// 			// Set bits 5:4 to "10" -> accelerator done
+// 		        status_reg &= ~STATUS_RUN;
+// 			status_reg |= STATUS_DONE;
+// 			device_sync_irq_raise(&flash->dev);
+// 			break;
+// 		}
+// 		if (rd_request.read()) {
+// 			unsigned index = rd_index.read();
+// 			unsigned length = rd_length.read();
 
-			rd_tran_cnt++;
-			rd_byte += length * sizeof(u16);
+// 			rd_tran_cnt++;
+// 			rd_byte += length * sizeof(u16);
 
-			rd_grant.write(true);
+// 			rd_grant.write(true);
 
-			do { wait(); }
-			while (rd_request.read());
-			rd_grant.write(false);
-			wait();
+// 			do { wait(); }
+// 			while (rd_request.read());
+// 			rd_grant.write(false);
+// 			wait();
 
-			copy_from_dram((u64) index, length);
+// 			copy_from_dram((u64) index, length);
 
-		} else {
-			// WRITE REQUEST
-			unsigned index = wr_index.read();
-			unsigned length = wr_length.read();
-			wr_tran_cnt++;
-			wr_byte += length * sizeof(u16);
+// 		} else {
+// 			// WRITE REQUEST
+// 			unsigned index = wr_index.read();
+// 			unsigned length = wr_length.read();
+// 			wr_tran_cnt++;
+// 			wr_byte += length * sizeof(u16);
 
-			wr_grant.write(true);
+// 			wr_grant.write(true);
 
-			do { wait(); }
-			while (wr_request.read());
-			wr_grant.write(false);
-			wait();
+// 			do { wait(); }
+// 			while (wr_request.read());
+// 			wr_grant.write(false);
+// 			wait();
 
-			copy_to_dram((u64) index, length);
-		}
-	}
-}
+// 			copy_to_dram((u64) index, length);
+// 		}
+// 	}
+// }
 
 void flash_wrapper::io()
 {

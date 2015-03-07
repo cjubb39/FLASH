@@ -5,7 +5,7 @@ QSIM ?= ${CARGO}/qsim
 
 FLASH_OBJS = flash-sync.o device-list.o
 FLASH_CXX_OBJS = flash.opp flash-main.opp flash-wrapper.opp
-HDRS = flash.hpp  flash-wrapper.hpp  wami_params.hpp flash-sync.h
+HDRS = flash.h  flash-wrapper.hpp flash-sync.h
 
 FLASH_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 CARGO_DEV_OBJS += $(addprefix $(FLASH_DIR),$(FLASH_OBJS))
@@ -42,6 +42,8 @@ INCLUDE_FLAGS += -I$(CARGO)/$(MCPAT)/include
 INCLUDE_FLAGS += -I$(SYSTEMC)/include
 
 CFLAGS = -g3 -ggdb -O0
+CFLAGS ?=
+include ../dev/sim/Makefile.params
 ALL_CFLAGS :=
 ALL_CFLAGS += $(CFLAGS)
 ALL_CFLAGS += $(INCLUDE_FLAGS)
