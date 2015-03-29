@@ -14,36 +14,48 @@ SC_MODULE(flash_wrapper) {
   sc_in<bool> rst; // reset
   sc_out<bool> rst_dut; // reset DUT
 
-  // // DMA requests interface
-  // sc_in<unsigned>   rd_index;   // array index
-  // sc_in<unsigned>   rd_length;
-  // sc_in<bool>       rd_request; // transaction request
-  // sc_out<bool>      rd_grant;   // transaction grant
+  // DMA requests interface
+  sc_in<unsigned>   rd_index;   // array index
+  sc_in<unsigned>   rd_length;
+  sc_in<bool>       rd_request; // transaction request
+  sc_out<bool>      rd_grant;   // transaction grant
 
-  // // DMA requests interface
-  // sc_in<unsigned>   wr_index;   // array index
-  // sc_in<unsigned>   wr_length;
-  // sc_in<bool>       wr_request; // transaction request
-  // sc_out<bool>      wr_grant;   // transaction grant
+  // DMA requests interface
+  sc_in<unsigned>   wr_index;   // array index
+  sc_in<unsigned>   wr_length;
+  sc_in<bool>       wr_request; // transaction request
+  sc_out<bool>      wr_grant;   // transaction grant
 
-  // /* DMA */
-  // put_initiator<unsigned long long> out_phys_addr;
-  // put_initiator<unsigned long> out_len;
-  // put_initiator<bool> out_write;
-  // put_initiator<bool> out_start;
+  /* DMA */
+  put_initiator<unsigned long long> out_phys_addr;
+  put_initiator<unsigned long> out_len;
+  put_initiator<bool> out_write;
+  put_initiator<bool> out_start;
 
-  sc_out<unsigned> conf_size;
-  sc_out<bool>     conf_done;
+  sc_in<bool> operational;
 
-  // computation complete. Written by store_output
-  sc_in<bool> flash_done;
+  /* schedule requests */
+  sc_out<bool>        sched_req;
+  sc_in<bool>        sched_grant;
+  sc_in<flash_pid_t> next_process;
+
+  /* tick command */
+  sc_out<bool> tick_req;
+  sc_in<bool> tick_grant;
+
+  /* process update request */
+  sc_out<bool>          change_req;
+  sc_in<bool>           change_grant;
+  sc_out<flash_pid_t>   change_pid;
+  sc_out<flash_pri_t>   change_pri;
+  sc_out<flash_state_t> change_state;
 
   void iowrite32(const struct io_req *req, struct io_rsp *rsp);
   void ioread32(struct io_req *req, struct io_rsp *rsp);
 
-  // void drive();
-  // void copy_from_dram(u64 index, unsigned length);
-  // void copy_to_dram(u64 index, unsigned length);
+  void drive();
+  void copy_from_dram(u64 index, unsigned length);
+  void copy_to_dram(u64 index, unsigned length);
 
   void io();
   void start();
@@ -78,9 +90,6 @@ private:
   u32 status_reg;        /* [0] go command */
                          /* [1-3] unused */
                          /* [4-5] see flash-sync.h */
-
-  tlm_fifo<bool> start_fifo; /* handshake between driver and device */
-                             /* when configuration is done the device can go */
 
   /* accelerator-activity profiling */
   unsigned rd_tran_cnt;

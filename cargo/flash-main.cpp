@@ -32,24 +32,29 @@ void flash_main(struct device *dev)
 
   /* DMA controller */
   put_get_channel<unsigned long long> dma_phys_addr;
-  put_get_channel<unsigned long> dma_len;
-  put_get_channel<bool> dma_write;
-  put_get_channel<bool> dma_start;
-  put_get_channel<long long int> dma_in_data;
-  put_get_channel<long long int> dma_out_data;
+  put_get_channel<unsigned long>      dma_len;
+  put_get_channel<bool>               dma_write;
+  put_get_channel<bool>               dma_start;
+  put_get_channel<long long int>      dma_in_data;
+  put_get_channel<long long int>      dma_out_data;
 
   /* FLASH */
-  put_get_channel<u16> bufdin;
-  put_get_channel<u16> bufdout;
-  sc_signal<unsigned> conf_size;
-  sc_signal<bool>     conf_done;
-
-  // computation complete. Written by store_output
-  sc_signal<bool> flash_done;
+  sc_signal<bool>           operational;
+  sc_signal<bool>           sched_req;
+  sc_signal<bool>           sched_grant;
+  sc_signal<flash_pid_t>    next_process;
+  sc_signal<bool>           tick_req;
+  sc_signal<bool>           tick_grant;
+  sc_signal<bool>           change_req;
+  sc_signal<bool>           change_grant;
+  sc_signal<flash_change_t> change_type;
+  sc_signal<flash_pid_t>    change_pid;
+  sc_signal<flash_pri_t>    change_pri;
+  sc_signal<flash_state_t>  change_state;
 
   flash_wrapper wrapper("wrapper", flash_dev);
   flash dut("dut");
-  sc_dma_controller<u16> dma("dma_controller", &dev->dma_cont);
+  sc_dma_controller<flash_task_t> dma("dma_controller", &dev->dma_cont);
   int budget_on_loan = 0;
   int budget;
 

@@ -15,41 +15,14 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "flash.h"
-#include "wami_params.h"
-#include "wami_utils.h"
-#include "wami_flash.h"
+#include "flash_driver.h"
 
 static const char *devname = "/dev/flash.0";
-
-#define PRIME 7
 
 ///////////////////////////////////////////////////////////////////////////////
 //#define NO_HARDWARE
 //#define NO_SOFTWARE
 ///////////////////////////////////////////////////////////////////////////////
-
-static void print_array(rgb_pixel arr[WAMI_FLASH_IMG_NUM_ROWS-2*PAD][WAMI_FLASH_IMG_NUM_COLS-2*PAD])
-{
-	int i, j;
-	for (i = 0; i < WAMI_FLASH_IMG_NUM_ROWS-2*PAD; i++) {
-		for (j = 0; j < WAMI_FLASH_IMG_NUM_COLS-2*PAD; j++) {
-			printf("[%04x,%04x,%04x]", arr[i][j].r, arr[i][j].g, arr[i][j].b);
-		}
-		printf("\n");
-	}
-}
-
-static long hash(rgb_pixel arr[WAMI_FLASH_IMG_NUM_ROWS-2*PAD][WAMI_FLASH_IMG_NUM_COLS-2*PAD])
-{
-	long long int hash = 0;
-	int row, col;
-	for (row = 0; row < WAMI_FLASH_IMG_NUM_ROWS-2*PAD; row++)
-		for (col = 0; col < WAMI_FLASH_IMG_NUM_COLS-2*PAD; col++) {
-			hash = PRIME * hash + ((arr[row][col].r * PRIME) + arr[row][col].g) * PRIME + arr[row][col].b;
-		}
-	return hash;
-}
 
 int main(int argc, char *argv[])
 {

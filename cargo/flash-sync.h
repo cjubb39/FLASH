@@ -10,17 +10,16 @@ enum flash_regs {
                        // Write 0x0 to reset the device
   FLASH_REG_SRC,
   FLASH_REG_DST,
-  FLASH_REG_SIZE,        // number of elelments per sample
-  FLASH_REG_NUM_SAMPLES, // number of samples
   FLASH_REG_MAX_SIZE,    // READ-ONLY maximum allowed size
   FLASH_REG_ID,          // device ID assigned by OS.
   FLASH_NR_REGS,
 };
 
 // Status bits in FLASH_REG_CMD
-#define STATUS_DONE BIT(5); // flash done
 #define STATUS_RUN  BIT(4); // flash running
                             // error if both set
+#define FLASH_CMD_RESET 0x1
+
 struct flash_sync {
   struct device dev;
 };

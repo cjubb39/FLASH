@@ -15,7 +15,7 @@
 
 #include <asm/uaccess.h>
 
-#include "flash.h"
+#include "flash_driver.h"
 
 /* device struct */
 struct flash_device {

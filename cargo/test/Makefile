@@ -1,9 +1,9 @@
 CARGO ?= /usr/local/share/cargo
 QSIM ?= ${CARGO}/qsim
 KSRC ?= $(QSIM)/linux
-CFLAGS := -O3 -DFLASH_SIZE=128
+CFLAGS := -O3
 CFLAGS += -m32 -static
-CFLAGS += -I../..
+CFLAGS += -I../.. -I../../dev/src
 LIBS = -lm -lrt
 
 all: tarball
@@ -14,7 +14,7 @@ ifeq ($(KSRC),)
 endif
 .PHONY: check
 
-flash-mmap: flash-mmap.c wami_flash.c wami_utils.c
+flash-mmap: flash-mmap.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 tarball: flash.tar
