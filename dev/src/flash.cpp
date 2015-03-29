@@ -86,8 +86,16 @@ void flash::process_change() {
 							queue[new_task_pri][insertion_point] = queue[task_pri][i];
 							queue[task_pri][i].active    = 0;
 							
-							/* update end_queue on new priority list */
 							MODULAR_INCR(end_queue[new_task_pri], TASK_QUEUE_SIZE);
+
+							/* consistency */
+							task_pri = new_task_pri;
+							i = insertion_point;
+						}
+
+						/* check if process is now dead */
+						if (queue[task_pri][i].status & EXIT_TRACE) {
+							queue[task_pri][i].active = 0;
 						}
 
 						break;
