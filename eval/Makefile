@@ -7,7 +7,7 @@ $(exec):
 
 .PHONY: clean
 clean:
-	rm -rf *.o *.gch *~
+	rm -rf *.o *.gch *~ $(exec)
 
 .PHONY: all
 all: clean $(exec)
