@@ -103,6 +103,30 @@ void flash::process_change() {
 	}
 }
 
+flash_task_t flash::get_next_task() {
+	flash_task_t next_task, to_check;
+	flash_pri_t pri, highest_priority;
+	uint32_t i;
+
+	next_task.active = 0;
+
+	for (pri = 0; pri < FLASH_MAX_PRI; ++pri) {
+		if (end_queue[pri] == cur_task[pri])
+			continue;
+
+		for (; cur_task[pri] < end_queue[pri];) {
+			to_check = queue[pri][cur_task[pri]];
+			MODULAR_INCR(cur_task[pri], end_queue[pri]);
+			if (to_check.active) {
+				next_task = to_check;
+				break;
+			}
+		}
+	}
+
+	return next_task;
+}
+
 void flash::schedule() {
 	flash_pid_t next_proc_pid;
 

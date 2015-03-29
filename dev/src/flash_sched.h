@@ -43,7 +43,7 @@ typedef struct {
 } flash_task_t;
 
 #define FLASH_MAX_PROC         1024
-#define FLASH_MAX_PRI          32
+#define FLASH_MAX_PRI          8
 
 #define FLASH_CHANGE_PRI       (1 << 0)
 #define FLASH_CHANGE_STATE     (1 << 1)
