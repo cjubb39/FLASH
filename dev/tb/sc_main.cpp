@@ -21,11 +21,12 @@ int sc_main(int, char**) {
 	sc_signal<bool> tick_grant;
 
 	/* process update request */
-	sc_signal<bool>          change_req;
-	sc_signal<bool>          change_grant;
-	sc_signal<flash_pid_t>   change_pid;
-	sc_signal<flash_pri_t>   change_pri;
-	sc_signal<flash_state_t> change_state;
+	sc_signal<bool>           change_req;
+	sc_signal<bool>           change_grant;
+	sc_signal<flash_change_t> change_type;
+	sc_signal<flash_pid_t>    change_pid;
+	sc_signal<flash_pri_t>    change_pri;
+	sc_signal<flash_state_t>  change_state;
 
 	flash    dut("dut");
 	flash_tb tb("tb");
@@ -40,6 +41,7 @@ int sc_main(int, char**) {
 	dut.tick_grant(tick_grant);
 	dut.change_req(change_req);
 	dut.change_grant(change_grant);
+	dut.change_type(change_type);
 	dut.change_pid(change_pid);
 	dut.change_pri(change_pri);
 	dut.change_state(change_state);
@@ -55,6 +57,7 @@ int sc_main(int, char**) {
 	tb.tick_grant(tick_grant);
 	tb.change_req(change_req);
 	tb.change_grant(change_grant);
+	tb.change_type(change_type);
 	tb.change_pid(change_pid);
 	tb.change_pri(change_pri);
 	tb.change_state(change_state);

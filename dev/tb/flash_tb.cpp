@@ -16,6 +16,7 @@ void flash_tb::load() {
 		task.state = 2 * (i + 1);
 
 		change_req.write(true);
+		change_type.write(FLASH_CHANGE_NEW);
 		change_pid.write(task.pid);
 		change_pri.write(task.pri);
 		change_state.write(task.state);

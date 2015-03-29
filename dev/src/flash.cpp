@@ -31,6 +31,7 @@ void flash::tick() {
 }
 
 void flash::process_change() {
+	flash_change_t req_type;
 	change_grant.write(false);
 	do { wait(); }
 	while (!init_done.read());
@@ -39,9 +40,15 @@ void flash::process_change() {
 		do { wait(); }
 		while (!change_req.read());
 		change_grant.write(true);
-		queue[end_queue].pid   = change_pid.read();
-		queue[end_queue].pri   = change_pri.read();
-		queue[end_queue].state = change_state.read();
+		req_type = change_type.read();
+
+		if (req_type & FLASH_CHANGE_PID)
+			queue[end_queue].pid   = change_pid.read();
+		if (req_type & FLASH_CHANGE_PRI)
+			queue[end_queue].pri   = change_pri.read();
+		if (req_type & FLASH_CHANGE_STATE)
+			queue[end_queue].state = change_state.read();
+
 		++end_queue;
 		do { wait(); }
 		while (change_req.read());

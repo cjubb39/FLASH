@@ -32,11 +32,12 @@ SC_MODULE(flash) {
 	sc_in <bool> tick_grant;
 
 	/* process update request */
-	sc_in <bool>          change_req;
-	sc_out<bool>          change_grant;
-	sc_in <flash_pid_t>   change_pid;
-	sc_in <flash_pri_t>   change_pri;
-	sc_in <flash_state_t> change_state;
+	sc_in <bool>           change_req;
+	sc_out<bool>           change_grant;
+	sc_in <flash_change_t> change_type;
+	sc_in <flash_pid_t>    change_pid;
+	sc_in <flash_pri_t>    change_pri;
+	sc_in <flash_state_t>  change_state;
 
 	void initialize();
 	void tick();
