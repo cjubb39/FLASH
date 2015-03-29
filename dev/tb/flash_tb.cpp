@@ -12,7 +12,7 @@ void flash_tb::load() {
 	flash_task_t task;
 	for (i = 0; i < TASKS_TO_SEND; ++i) {
 		task.pid = i + 1;
-		task.pri = i + 1;
+		task.pri = (i + 1) % FLASH_MAX_PRI;
 		task.state = 2 * (i + 1);
 
 		change_req.write(true);

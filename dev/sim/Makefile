@@ -7,7 +7,7 @@ LIBDIR = -L. -L$(SYSTEMC)/lib-$(TARGET_ARCH)
 
 INCDIR = -I../src -I../tb -I$(SYSTEMC)/include -I$(TLM)/include/tlm
 
-CFLAGS ?=
+CFLAGS ?= -g
 include Makefile.params # after CFLAGS defined
 
 PARAMS_FILE=.params

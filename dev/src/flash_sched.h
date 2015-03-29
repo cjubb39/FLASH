@@ -39,13 +39,19 @@ typedef struct {
 	flash_pid_t pid;
 	flash_pri_t pri;
 	flash_state_t state;
+	unsigned active :1;
 } flash_task_t;
 
-#define FLASH_CHANGE_PID       (1 << 0)
-#define FLASH_CHANGE_PRI       (1 << 1)
-#define FLASH_CHANGE_STATE     (1 << 2)
-#define FLASH_CHANGE_NEW       (FLASH_CHANGE_PID | \
+#define FLASH_MAX_PROC         1024
+#define FLASH_MAX_PRI          8
+
+#define FLASH_CHANGE_PRI       (1 << 0)
+#define FLASH_CHANGE_STATE     (1 << 1)
+#define __FLASH_CHANGE_NEW     (1 << 2)
+#define FLASH_CHANGE_NEW       (__FLASH_CHANGE_NEW | \
 		                            FLASH_CHANGE_PRI | \
 		                            FLASH_CHANGE_STATE)
+
+#define MODULAR_INCR(var, mod) (var = (var + 1) % mod)
 
 #endif
