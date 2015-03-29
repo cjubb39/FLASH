@@ -64,10 +64,11 @@ SC_MODULE(flash) {
 	sc_signal<bool> tick_grant_internal;
 	sc_signal<bool> tick_rst;
 
-	uint32_t cur_task;
-	uint32_t end_queue;
-	flash_task_t queue[TASK_QUEUE_SIZE];
+	flash_task_t get_next_task();
 
+	uint32_t cur_task [FLASH_MAX_PRI];
+	uint32_t end_queue[FLASH_MAX_PRI];
+	flash_task_t queue[FLASH_MAX_PRI][TASK_QUEUE_SIZE];
 };
 #endif
 
