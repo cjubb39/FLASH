@@ -40,7 +40,7 @@ void flash::process_change() {
 	flash_pri_t task_pri, new_task_pri;
 	flash_pid_t task_pid;
 	size_t insertion_point;
-	int i;
+	int i, condense_queue_check;
 
 	change_grant.write(false);
 	do { wait(); }
@@ -53,6 +53,7 @@ void flash::process_change() {
 		req_type = change_type.read();
 		task_pid = change_pid.read();
 
+		condense_queue_check = false;
 
 		if (req_type & __FLASH_CHANGE_NEW) {
 			task_pri = change_pri.read();
@@ -86,16 +87,25 @@ void flash::process_change() {
 							queue[new_task_pri][insertion_point] = queue[task_pri][i];
 							queue[task_pri][i].active    = 0;
 							
-							MODULAR_INCR(end_queue[new_task_pri], TASK_QUEUE_SIZE);
-
 							/* consistency */
 							task_pri = new_task_pri;
 							i = insertion_point;
 						}
 
 						/* check if process is now dead */
-						if (queue[task_pri][i].status & EXIT_TRACE) {
+						if (queue[task_pri][i].state & EXIT_TRACE) {
 							queue[task_pri][i].active = 0;
+							condense_queue_check = true;
+						}
+
+						/* cleanup and condense */
+						if (req_type & FLASH_CHANGE_PRI) {
+							MODULAR_INCR(end_queue[task_pri], TASK_QUEUE_SIZE);
+							condense_queue_check = true;
+						}
+
+						if (condense_queue_check) {
+							condense_queue();
 						}
 
 						break;
@@ -108,6 +118,25 @@ void flash::process_change() {
 		while (change_req.read());
 		change_grant.write(false);
 		wait();
+	}
+}
+
+void flash::condense_queue() {
+	flash_pri_t pri;
+	size_t i, fill_marker;
+
+	for (pri = 0 ; pri < FLASH_MAX_PRI; ++pri) {
+		for (i = cur_task[pri], fill_marker = i, cur_task[pri] = -1;
+				i != end_queue[pri];
+				MODULAR_INCR(i, TASK_QUEUE_SIZE)) {
+			/* condense the queue */
+			if (queue[pri][i].active) {
+				if (cur_task[pri] == -1) cur_task[pri] = i;
+				queue[pri][fill_marker] = queue[pri][i];
+				MODULAR_INCR(fill_marker, TASK_QUEUE_SIZE);
+			}
+		}
+		end_queue[pri] = fill_marker;
 	}
 }
 

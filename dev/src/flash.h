@@ -65,6 +65,7 @@ SC_MODULE(flash) {
 	sc_signal<bool> tick_rst;
 
 	flash_task_t get_next_task();
+	void condense_queue();
 
 	uint32_t cur_task [FLASH_MAX_PRI];
 	uint32_t end_queue[FLASH_MAX_PRI];
