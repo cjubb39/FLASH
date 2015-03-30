@@ -66,6 +66,7 @@ SC_MODULE(flash) {
 
 	flash_task_t get_next_task();
 	void condense_queue();
+	int lookup_process(flash_pid_t, flash_pri_t*, size_t*);
 
 	uint32_t cur_task [FLASH_MAX_PRI];
 	uint32_t end_queue[FLASH_MAX_PRI];

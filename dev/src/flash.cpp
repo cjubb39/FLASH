@@ -35,12 +35,31 @@ void flash::tick() {
 	}
 }
 
+int flash::lookup_process(flash_pid_t pid, flash_pri_t *pri,
+		size_t *position) {
+	flash_pri_t task_pri;
+	size_t i;
+
+	for (task_pri = 0; task_pri < FLASH_MAX_PRI; ++task_pri) {
+		for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
+			if (queue[task_pri][i].pid == pid) {
+				*pri = task_pri;
+				*position = i;
+				return 1;
+			}
+		}
+	}
+	return 0; /* no match */
+}
+
+
 void flash::process_change() {
 	flash_change_t req_type;
 	flash_pri_t task_pri, new_task_pri;
 	flash_pid_t task_pid;
 	size_t insertion_point;
-	int i, condense_queue_check;
+	bool lookup_found, condense_queue_check;
+	size_t i;
 
 	change_grant.write(false);
 	do { wait(); }
@@ -66,52 +85,45 @@ void flash::process_change() {
 
 			MODULAR_INCR(end_queue[task_pri], TASK_QUEUE_SIZE);
 		} else {
-			cout << "REAL UPDATE" << endl;
 			/* no new task */
-			for (task_pri = 0; task_pri < FLASH_MAX_PRI; ++task_pri) {
-				for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
-					if (!queue[task_pri][i].active)
-						continue;
+			cout << "REAL UPDATE" << endl;
 
-					/* found a match */
-					if (queue[task_pri][i].pid == task_pid) {
-						if (req_type & FLASH_CHANGE_STATE) {
-							queue[task_pri][i].state = change_state.read();
-						}
+			lookup_found = lookup_process(task_pid, &task_pri, &i);
 
-						if (req_type & FLASH_CHANGE_PRI) {
-							new_task_pri = change_pri.read();
-							insertion_point = end_queue[new_task_pri];
-
-							/* copy entry and make old one inactive */
-							queue[new_task_pri][insertion_point] = queue[task_pri][i];
-							queue[task_pri][i].active    = 0;
-							
-							/* consistency */
-							task_pri = new_task_pri;
-							i = insertion_point;
-						}
-
-						/* check if process is now dead */
-						if (queue[task_pri][i].state & EXIT_TRACE) {
-							queue[task_pri][i].active = 0;
-							condense_queue_check = true;
-						}
-
-						/* cleanup and condense */
-						if (req_type & FLASH_CHANGE_PRI) {
-							MODULAR_INCR(end_queue[task_pri], TASK_QUEUE_SIZE);
-							condense_queue_check = true;
-						}
-
-						if (condense_queue_check) {
-							condense_queue();
-						}
-
-						break;
-					} // end find match
+			if (lookup_found && queue[task_pri][i].active) {
+				if (req_type & FLASH_CHANGE_STATE) {
+					queue[task_pri][i].state = change_state.read();
 				}
-			}
+
+				if (req_type & FLASH_CHANGE_PRI) {
+					new_task_pri = change_pri.read();
+					insertion_point = end_queue[new_task_pri];
+
+					/* copy entry and make old one inactive */
+					queue[new_task_pri][insertion_point] = queue[task_pri][i];
+					queue[task_pri][i].active    = 0;
+
+					/* consistency */
+					task_pri = new_task_pri;
+					i = insertion_point;
+				}
+
+				/* check if process is now dead */
+				if (queue[task_pri][i].state & EXIT_TRACE) {
+					queue[task_pri][i].active = 0;
+					condense_queue_check = true;
+				}
+
+				/* cleanup and condense */
+				if (req_type & FLASH_CHANGE_PRI) {
+					MODULAR_INCR(end_queue[task_pri], TASK_QUEUE_SIZE);
+					condense_queue_check = true;
+				}
+
+				if (condense_queue_check) {
+					condense_queue();
+				}
+			} // end find match
 		} // end no new tasks
 
 		do { wait(); }
@@ -151,12 +163,14 @@ flash_task_t flash::get_next_task() {
 		if (end_queue[pri] == cur_task[pri])
 			continue;
 
-		for (; cur_task[pri] < end_queue[pri];) {
+		for (; cur_task[pri] != end_queue[pri];) {
 			to_check = queue[pri][cur_task[pri]];
 			MODULAR_INCR(cur_task[pri], end_queue[pri]);
 			if (to_check.active) {
 				next_task = to_check;
 				break;
+			} else {
+				cout << "SKIPPING INACTIVE RECORD" << endl;
 			}
 		}
 	}
