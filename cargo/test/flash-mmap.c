@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 	/* here, do your time-consuming job */
 	// Retrieve the task
 	flash_task_t hardware_task;
-	int i, itr = 1<<12;
+	int i, itr = 1<<18;
 	for (i = 0; i < itr; i++)
 		memcpy(&hardware_task, ((char *) buf) + FLASH_INPUT_SIZE, sizeof(hardware_task));
 	t = clock() - t;

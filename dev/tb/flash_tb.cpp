@@ -36,19 +36,15 @@ void flash_tb::load() {
 	}
 
 	change_req.write(true);
+#if 0
+	change_type.write(FLASH_CHANGE_STATE);
+	change_pid.write(39);
+	change_state.write(EXIT_ZOMBIE);
+#else
 	change_type.write(FLASH_CHANGE_PRI);
 	change_pid.write(39);
 	change_pri.write(2);
-	do { wait(); }
-	while (!change_grant.read());
-	change_req.write(false);
-	do { wait(); }
-	while (change_grant.read());
-
-	change_req.write(true);
-	change_type.write(FLASH_CHANGE_STATE);
-	change_pid.write(119);
-	change_state.write(EXIT_ZOMBIE);
+#endif
 	do { wait(); }
 	while (!change_grant.read());
 	change_req.write(false);

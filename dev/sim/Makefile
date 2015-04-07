@@ -43,8 +43,6 @@ clean:
 	rm -f ../output/*
 	if [ -d .simvision ]; then rm -r .simvision; fi
 
-distclean: clean
-
 run: $(TARGET)
 	./$(TARGET)
 
