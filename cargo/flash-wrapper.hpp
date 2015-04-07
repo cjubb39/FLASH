@@ -47,8 +47,8 @@ SC_MODULE(flash_wrapper) {
   sc_in<flash_pid_t> next_process;
 
   /* tick command */
-  sc_out<bool> tick_req;
-  sc_in<bool> tick_grant;
+  sc_in<bool> tick_req;
+  sc_out<bool> tick_grant;
 
   /* process update request */
   sc_out<bool>          change_req;
@@ -66,6 +66,8 @@ SC_MODULE(flash_wrapper) {
   void drive();
   void copy_from_dram(u64 index, unsigned length);
   void copy_to_dram(u64 index, unsigned length);
+  void write_to_dma();
+  void write_to_device();
 
   void io();
   void start();

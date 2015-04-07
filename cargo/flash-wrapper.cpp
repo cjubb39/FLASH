@@ -81,6 +81,12 @@ void flash_wrapper::copy_from_dram(u64 index, unsigned length)
 	out_len.put(length);
 	out_write.put(false);
 	out_start.put(true);
+	write_to_device();
+}
+
+void flash_wrapper::write_to_device()
+{
+	
 }
 
 void flash_wrapper::copy_to_dram(u64 index, unsigned length)
@@ -90,6 +96,12 @@ void flash_wrapper::copy_to_dram(u64 index, unsigned length)
 	out_len.put(length);
 	out_write.put(true);
 	out_start.put(true);
+	write_to_dma();
+}
+
+void flash_wrapper::write_to_dma()
+{
+
 }
 
 void flash_wrapper::start()

@@ -3,7 +3,7 @@ QSIM ?= ${CARGO}/qsim
 KSRC ?= $(QSIM)/linux
 CFLAGS := -O3
 CFLAGS += -m32 -static
-CFLAGS += -I../.. -I../../dev/src
+CFLAGS += -I../.. -I../../dev/src -I../
 LIBS = -lm -lrt
 
 all: tarball
@@ -20,7 +20,7 @@ flash-mmap: flash-mmap.c
 tarball: flash.tar
 .PHONY: tarball
 
-flash.tar: flash-mmap flash.ko runme.sh inout
+flash.tar: flash-mmap flash.ko runme.sh
 	tar cf $@ $^
 
 driver: flash.ko

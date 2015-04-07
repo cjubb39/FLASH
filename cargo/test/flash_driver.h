@@ -12,7 +12,7 @@
 #endif
 #endif /* __KERNEL__ */
 
-#include "flash_sched.h"
+#include "../flash_sched.h"
 
 #define DRV_NAME  "flash"
 #define PFX    DRV_NAME ": "
@@ -39,6 +39,10 @@
 #define FLASH_OUTPUT_SIZE	(sizeof(flash_task_t) * FLASH_OUTPUT_NUM)
 
 #define FLASH_BUF_SIZE	(FLASH_INPUT_SIZE + FLASH_OUTPUT_SIZE)
+
+struct flash_access {
+	uint32_t cmd;
+};
 
 #define FLASH_IOC_ACCESS     _IOW ('I', 0, struct flash_access)
 #define FLASH_IOC_READ       _IOR ('I', 0, struct flash_access)

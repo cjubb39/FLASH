@@ -4,7 +4,7 @@
 
 /sbin/insmod flash.ko
 /sbin/mdev -s
-./flash-mmap ./inout &
+./flash-mmap &
 wait
 /sbin/rmmod flash
 

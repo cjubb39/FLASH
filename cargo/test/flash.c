@@ -68,11 +68,11 @@ static irqreturn_t flash_irq(int irq, void *dev)
 static bool flash_access_ok(struct flash_device *flash,
 			const struct flash_access *access)
 {
-	unsigned max_sz = ioread32(flash->iomem + FLASH_REG_MAX_SIZE);
-	unsigned size = access->size;
-	// printf("Max size: %d, current size: %d\n", max_sz, size);
-	if (size > max_sz || size <= 0)
-		return false;
+	// unsigned max_sz = ioread32(flash->iomem + FLASH_REG_MAX_SIZE);
+	// unsigned size = access->size;
+	// // printf("Max size: %d, current size: %d\n", max_sz, size);
+	// if (size > max_sz || size <= 0)
+	// 	return false;
 
 	return true;
 }
@@ -100,12 +100,11 @@ static int flash_transfer(struct flash_device *flash,
 
 	iowrite32(file->dma_handle, flash->iomem + FLASH_REG_SRC);
 	iowrite32(file->dma_handle + in_buf_size, flash->iomem + FLASH_REG_DST);
-	iowrite32(FLASH_SIZE, flash->iomem + FLASH_REG_SIZE);
-	iowrite32(0x1, flash->iomem + FLASH_REG_CMD);
+	// iowrite32(0x1, flash->iomem + FLASH_REG_CMD);
 
-	wait = wait_for_completion_interruptible(&flash->completion);
-	if (wait < 0)
-		return -EINTR;
+	// wait = wait_for_completion_interruptible(&flash->completion);
+	// if (wait < 0)
+	// 	return -EINTR;
 	return 0;
 }
 

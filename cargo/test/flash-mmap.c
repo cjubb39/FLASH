@@ -13,16 +13,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include "flash_driver.h"
 
 static const char *devname = "/dev/flash.0";
-
-///////////////////////////////////////////////////////////////////////////////
-//#define NO_HARDWARE
-//#define NO_SOFTWARE
-///////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[])
 {
@@ -33,32 +30,8 @@ int main(int argc, char *argv[])
 	size_t sample_size;
 
 	struct flash_access desc;
-	int rc, memcmp_ret;
+	int rc;
 
-	// Load the image
-	u16 bayer[WAMI_FLASH_IMG_NUM_ROWS][WAMI_FLASH_IMG_NUM_COLS];
-	rgb_pixel software_flash[WAMI_FLASH_IMG_NUM_ROWS-2*PAD][WAMI_FLASH_IMG_NUM_COLS-2*PAD];
-	rgb_pixel hardware_flash[WAMI_FLASH_IMG_NUM_ROWS-2*PAD][WAMI_FLASH_IMG_NUM_COLS-2*PAD];
-	rgb_pixel golden_flash[WAMI_FLASH_IMG_NUM_ROWS-2*PAD][WAMI_FLASH_IMG_NUM_COLS-2*PAD];
-
-	// Read the image file
-	read_image_file((void *) bayer, sizeof(u16), "input.bin", "inout", sizeof(u16) * WAMI_FLASH_IMG_NUM_ROWS * WAMI_FLASH_IMG_NUM_COLS);
-	// Read the golden file
-	read_image_file((void *) golden_flash, sizeof(rgb_pixel), "golden_output.bin", "inout", sizeof(rgb_pixel) * (WAMI_FLASH_IMG_NUM_ROWS-2*PAD) * (WAMI_FLASH_IMG_NUM_COLS-2*PAD));
-	printf("Golden flash hash: %ld\n", hash(golden_flash));
-	/* *********************** SOFTWARE ****************************************/
-#ifndef NO_SOFTWARE
-	printf("Start: FLASH as SOFTWARE.\n");
-	wami_flash(software_flash, bayer);
-	// print_array(software_flash);
-	printf("Software flash hash: %ld\n", hash(software_flash));
-	memcmp_ret = memcmp(software_flash, golden_flash, sizeof(golden_flash));
-	printf("software_flash and golden_flash memcmp: %d\n", memcmp_ret);
-	if (!memcmp_ret)
-		printf("Software and Golden match!\n");
-#endif
-	/* *********************** HARDWARE ****************************************/
-#ifndef NO_HARDWARE
 	printf("Open: %s\n", devname);
 	fd = open(devname, O_RDWR, 0);
 	if (fd < 0)
@@ -80,13 +53,13 @@ int main(int argc, char *argv[])
 
 	/* load data - copy data from input data structures*/
 	// for (i = 0; i < num; i++) {
-	memcpy(buf, bayer, sizeof(bayer));
-	printf("Size of bayer: %lu\n", sizeof(bayer));
+	// memcpy(buf, bayer, sizeof(bayer));
+	// printf("Size of bayer: %lu\n", sizeof(bayer));
 	// 	memcpy(buf + ((2 * i + 1) * sz), coeff + (i * sz), sample_size);
 	// }
 
 	// printf("\nStart: FLASH as HARDWARE.\n");
-	desc.size = sizeof(software_flash);
+	desc.cmd = FLASH_CMD_RESET;
 	// // desc.num_samples = num;
 
 	// Configure the device and run it
@@ -96,22 +69,27 @@ int main(int argc, char *argv[])
 		perror("ioctl");
 		exit(1);
 	}
-	// Retrieve the computation
-	memcpy(hardware_flash, ((char *) buf) + FLASH_INPUT_SIZE, sizeof(hardware_flash));
-	printf("Hardware flash hash: %ld\n", hash(hardware_flash));
 
-	// Check equality
-	memcmp_ret = memcmp(hardware_flash, golden_flash, sizeof(golden_flash));
-	printf("hardware_flash and golden_flash memcmp: %d\n", memcmp_ret);
 
-	if (!memcmp_ret)
-		printf("Hardware and Golden match!\n");
+	clock_t t;
+	double time_spent;
+
+	t = clock();
+	printf("Current clicks: %d\n", t);
+	/* here, do your time-consuming job */
+	// Retrieve the task
+	flash_task_t hardware_task;
+	int i, itr = 1<<12;
+	for (i = 0; i < itr; i++)
+		memcpy(&hardware_task, ((char *) buf) + FLASH_INPUT_SIZE, sizeof(hardware_task));
+	t = clock() - t;
+	time_spent = ((double) t) / CLOCKS_PER_SEC;
+	printf("Task info: pid: %u, pri: %u, state: %u, time_spent: %f, clicks: %d\n", hardware_task.pid, hardware_task.pri, hardware_task.state, time_spent, t);
 
 	if (munmap(buf, buf_size)) {
 		perror("munmap");
 		exit(1);
 	}
-#endif
 	close(fd);
 
 	return 0;
