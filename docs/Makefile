@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 PUBTEX := proposal.tex
+=======
+PUBTEX := abstract.tex
+>>>>>>> 1ccd1b9f8fd15fd802e1a30d6880a2cb369f06b6
 PUBBIB := ref.bib
 PUBPDF := $(PUBTEX:%.tex=%.pdf)
 

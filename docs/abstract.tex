@@ -32,8 +32,54 @@
 \lipsum[1]
 
 \section{FLASH Architecture}
-% Chae
-\lipsum[1]
+The FLASH hardware unit is built with ease of replacement of the usual
+software implementation in mind.  The major addition we add over a standard
+scheduler is the ability for the scheduler itself to raise an interrupt to
+indicate a tick. Figure~\ref{fig:arch_overview} gives an overview of the
+system architecture.
+
+\begin{figure}
+	\begin{center}
+		picture here.
+		\caption{System Architecture}
+		\label{fig:arch_overview}
+	\end{center}
+\end{figure}
+
+We now describe in more detail both the interface and
+internal implementation of the scheduling unit.
+
+\subsection{FLASH Interface}
+At its most basic, the hardware interface is given by two major segments:
+\emph{scheduling control} and \emph{process control}.  Together these two
+segments allow processes to be scheduled based on an up-to-date accounting
+of process status, kept via the process control interface.  The scheduling
+controller interface sends timer tick interrupts and serves incoming
+requests for new processes to run.
+
+\subsubsection{Process Control Interface}
+Let us first focus deeply on this process control interface.  It is here
+that FLASH is given information to hold the proper state of all running
+processes.  Currently, we store process id (PID), priority, and state
+triples as passed through the interface using a standard four-phase
+handshake.
+
+\paragraph{Consistency} A major hurdle with offloading scheduling decisions
+to a dedicated piece of hardware is ensuring consistency between the data
+structures maintained by the software kernel (again, here Linux) and the
+hardware unit.
+
+We cannot completely offload the data about processes to hardware most
+obviously because of sheer size of objects like the \ttt{task\_struct} as
+well as their high use by modules other than the scheduler.  We must,
+though, retain some structure in FLASH memory so that it may make even the
+most basic scheduling decisions.
+
+For this reason, we expect each update in process priority or state to be
+communicated to FLASH so it may continue making accurate scheduling
+decisions.
+
+\subsubsection{Scheduling Control Interface}
 
 \section{Evaluation}
 % Mark
@@ -49,5 +95,11 @@
 
 \section{Conclusion}
 \lipsum[1]
+
+\nocite{*}
+{\small
+	\bibliographystyle{abbrv}
+	\bibliography{ref}
+}
 
 \end{document}
