@@ -1,5 +1,6 @@
 CC=gcc
-CFLAGS=-g -Wall
+CFLAGS?=
+CFLAGS+=-g -Wall $(E)
 
 exec=context_switch_cycles
 
