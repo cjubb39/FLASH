@@ -1,4 +1,4 @@
-PUBTEX := proposal.tex
+PUBTEX := proposal.tex abstract.tex
 PUBBIB := ref.bib
 PUBPDF := $(PUBTEX:%.tex=%.pdf)
 
