@@ -16,7 +16,7 @@ extern "C" {
 void flash_main(struct device *dev)
 {
   struct flash_sync *flash_dev = dev_to_flash(dev);
-  sc_clock clk("clk", 1, SC_NS);
+  sc_clock         clk("clk", 1, SC_NS);
   sc_signal<bool>  rst("rst");
   sc_signal<bool>  rst_dut("rst_dut");
 
@@ -35,8 +35,8 @@ void flash_main(struct device *dev)
   put_get_channel<unsigned long>      dma_len;
   put_get_channel<bool>               dma_write;
   put_get_channel<bool>               dma_start;
-  put_get_channel<long long int>      dma_in_data;
-  put_get_channel<long long int>      dma_out_data;
+  put_get_channel<flash_task_t>       dma_in_data;
+  put_get_channel<flash_task_t>       dma_out_data;
 
   /* FLASH */
   sc_signal<bool>           operational;
@@ -52,49 +52,58 @@ void flash_main(struct device *dev)
   sc_signal<flash_pri_t>    change_pri;
   sc_signal<flash_state_t>  change_state;
 
-  flash_wrapper wrapper("wrapper", flash_dev);
-  flash dut("dut");
+  flash_wrapper                   wrapper("wrapper", flash_dev);
+  flash                           dut("dut");
   sc_dma_controller<flash_task_t> dma("dma_controller", &dev->dma_cont);
-  int budget_on_loan = 0;
-  int budget;
+  int                             budget_on_loan = 0;
+  int                             budget;
 
   sc_report_handler::set_actions("/IEEE_Std_1666/deprecated", SC_DO_NOTHING);
 
   /* wire everything */
   dut.clk(clk);
   dut.rst(rst_dut);
-  // dut.rd_index(rd_index);
-  // dut.rd_length(rd_length);
-  // dut.rd_request(rd_request);
-  // dut.rd_grant(rd_grant);
-  // dut.wr_index(wr_index);
-  // dut.wr_length(wr_length);
-  // dut.wr_request(wr_request);
-  // dut.wr_grant(wr_grant);
-  // dut.bufdout(bufdout);
-  // dut.bufdin(bufdin);
-  // dut.conf_size(conf_size);
-  // dut.conf_done(conf_done);
-  // dut.flash_done(flash_done);
+  dut.operational(operational);
+  dut.sched_req(sched_req);
+  dut.sched_grant(sched_grant);
+  dut.next_process(next_process);
+  dut.tick_req(tick_req);
+  dut.tick_grant(tick_grant);
+  dut.change_req(change_req);
+  dut.change_grant(change_grant);
+  dut.change_type(change_type);
+  dut.change_pid(change_pid);
+  dut.change_pri(change_pri);
+  dut.change_state(change_state);
 
   wrapper.clk(clk);
   wrapper.rst(rst);
   wrapper.rst_dut(rst_dut);
-  // wrapper.rd_index(rd_index);
-  // wrapper.rd_length(rd_length);
-  // wrapper.rd_request(rd_request);
-  // wrapper.rd_grant(rd_grant);
-  // wrapper.wr_index(wr_index);
-  // wrapper.wr_length(wr_length);
-  // wrapper.wr_request(wr_request);
-  // wrapper.wr_grant(wr_grant);
-  wrapper.conf_size(conf_size);
-  wrapper.conf_done(conf_done);
-  wrapper.flash_done(flash_done);
-  // wrapper.out_phys_addr(dma_phys_addr);
-  // wrapper.out_len(dma_len);
-  // wrapper.out_write(dma_write);
-  // wrapper.out_start(dma_start);
+  wrapper.operational(operational);
+  wrapper.sched_req(sched_req);
+  wrapper.sched_grant(sched_grant);
+  wrapper.next_process(next_process);
+  wrapper.tick_req(tick_req);
+  wrapper.tick_grant(tick_grant);
+  wrapper.change_req(change_req);
+  wrapper.change_grant(change_grant);
+  wrapper.change_pid(change_pid);
+  wrapper.change_pri(change_pri);
+  wrapper.change_state(change_state);
+  wrapper.rd_index(rd_index);   // array index
+  wrapper.rd_length(rd_length);
+  wrapper.rd_request(rd_request); // transaction request
+  wrapper.rd_grant(rd_grant);   // transaction grant
+  wrapper.wr_index(wr_index);   // array index
+  wrapper.wr_length(wr_length);
+  wrapper.wr_request(wr_request); // transaction request
+  wrapper.wr_grant(wr_grant);   // transaction grant
+  wrapper.out_phys_addr(dma_phys_addr);
+  wrapper.out_len(dma_len);
+  wrapper.out_write(dma_write);
+  wrapper.out_start(dma_start);
+  wrapper.from_dma(dma_out_data);
+  wrapper.to_dma(dma_in_data);
 
   dma.clk(clk);
   dma.rst(rst);
@@ -102,8 +111,8 @@ void flash_main(struct device *dev)
   dma.in_len(dma_len);
   dma.in_write(dma_write);
   dma.in_start(dma_start);
-  dma.in_data(bufdout);
-  dma.out_data(bufdin);
+  dma.in_data(dma_in_data);
+  dma.out_data(dma_out_data);
 
   /* run simulation */
   rst.write(false);

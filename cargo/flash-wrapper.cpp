@@ -75,7 +75,6 @@ void flash_wrapper::iowrite32(const struct io_req *req, struct io_rsp *rsp)
 void flash_wrapper::copy_from_dram(u64 index, unsigned length)
 {
 	obj_dbg(&flash->dev.obj, "%s\n", __func__);
-
 	/* Byte address */
 	out_phys_addr.put(dma_phys_addr_src + (index * sizeof(flash_task_t)));
 	/* Number of DMA token (templated type). u16 for flash */
@@ -102,10 +101,10 @@ void flash_wrapper::start()
 
 	for (;;) {
 		wait();
-		// start_fifo.get();
+
 		obj_dbg(&flash->dev.obj, "CTL start\n");
 		drive();
-		obj_dbg(&lfash->dev.obj, "FLASH done\n");
+		obj_dbg(&flash->dev.obj, "FLASH done\n");
 	}
 }
 
@@ -114,24 +113,13 @@ void flash_wrapper::drive()
 	for (;;) {
 		do {
 			wait();
-		} while (!rd_request.read() && !wr_request.read() && !flash_done.read())
-			;
-		// if (flash_done.read()) {
-		// 	rst_dut.write(false);
-		// 	wait();
-		// 	rst_dut.write(true);
-		// 	// Set bits 5:4 to "10" -> accelerator done
-		//         status_reg &= ~STATUS_RUN;
-		// 	status_reg |= STATUS_DONE;
-		// 	device_sync_irq_raise(&flash->dev);
-		// 	break;
-		// }
+		} while (!rd_request.read() && !wr_request.read());
 		if (rd_request.read()) {
 			unsigned index = rd_index.read();
 			unsigned length = rd_length.read();
 
 			rd_tran_cnt++;
-			rd_byte += length * sizeof(u16);
+			rd_byte += length * sizeof(flash_task_t);
 
 			rd_grant.write(true);
 
@@ -145,8 +133,9 @@ void flash_wrapper::drive()
 			// WRITE REQUEST
 			unsigned index = wr_index.read();
 			unsigned length = wr_length.read();
+
 			wr_tran_cnt++;
-			wr_byte += length * sizeof(u16);
+			wr_byte += length * sizeof(flash_task_t);
 
 			wr_grant.write(true);
 

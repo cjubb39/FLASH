@@ -9,6 +9,13 @@ extern "C" {
 
 #include "flash.h"
 
+typedef union flash_dma_union {
+  flash_pid_t pid;
+  flash_pri_t pri;
+  flash_state_t state;
+  unsigned active :1;
+} flash_dma_u;
+
 SC_MODULE(flash_wrapper) {
   sc_in<bool> clk; // clock
   sc_in<bool> rst; // reset
@@ -35,7 +42,7 @@ SC_MODULE(flash_wrapper) {
   sc_in<bool> operational;
 
   /* schedule requests */
-  sc_out<bool>        sched_req;
+  sc_out<bool>       sched_req;
   sc_in<bool>        sched_grant;
   sc_in<flash_pid_t> next_process;
 
@@ -49,6 +56,9 @@ SC_MODULE(flash_wrapper) {
   sc_out<flash_pid_t>   change_pid;
   sc_out<flash_pri_t>   change_pri;
   sc_out<flash_state_t> change_state;
+
+  get_initiator<flash_task_t> from_dma;
+  put_initiator<flash_task_t> to_dma;
 
   void iowrite32(const struct io_req *req, struct io_rsp *rsp);
   void ioread32(struct io_req *req, struct io_rsp *rsp);
