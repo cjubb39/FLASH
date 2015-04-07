@@ -80,6 +80,7 @@ void flash_tb::source() {
 			wait();
 	}
 
+	cout << sc_time_stamp() << endl;
 	sc_stop();
 }
 
