@@ -186,10 +186,24 @@ development.  More potential designs can be analyzed, and a Pareto curve can
 be generated.  Using that information, the most suitable design can be
 chosen as a tradeoff between (generally) area and speed.
 
+% more Mark stuff here
+
 
 \section{Related Works}
 % Chae
-\lipsum[1]
+One of the major bottlenecks to server-class performance in interactive
+desktop environments is that of the context switch and in particular
+scheduling.  FLASH attempts to provide a hardware module which serves as the
+scheduler for the Linux Kernel.  We replace the CFS from the kernel with our
+own implementation in accordance with the major principles of the Completely
+Fair Scheduler\cite{wong2008cfs}.
+
+Previous hardware scheduling units focus completely on embedded systems with
+a fixed number of tasks\cite{nakano1995hardware, morton2004hardware,
+nacul2007hardware, kuacharoen2003configurable, park2008hardware}.  The major
+novel challenge in escalating to a desktop Linux is handling the dynamic,
+unbounded (from a realistic hardware perspective) number of tasks.
+
 
 \section{Conclusion}
 \lipsum[1]
