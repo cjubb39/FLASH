@@ -20,16 +20,38 @@
 \maketitle
 
 \begin{abstract}
-\lipsum[1]
+% \lipsum[1]
+
+As accelerators become more common and necessary as a way to continue Moore's Law in the absence of Dennard Scaling, researchers explore segments of computation that can be improved with the aid of dedicated hardware. This paper presents FLASH, a hardware scheduler to take over the task of scheduling from the operating system. FLASH is able to make scheduling decisions in much fewer cycles as compared to modern operating system schedulers. The scheduling decisions it makes are just as good as those that would be made in software, but in much reduced time and without negatively impacting processor performance features. FLASH is designed to keep kernel modifications minimal, only requiring changes when the kernel scheduling interface changes.
 \end{abstract}
 
 
 \section{Introduction}
-\lipsum[1]
+% \lipsum[1]
+Traditional desktop operating systems are interactive, meaning that they serve as the primary interface between a user and a machine. Traditional server operating systems are batch-job oriented, meaning that processes are not pre-empted: a process continues until it exits or is forced to exit due to error. This preemption is one of the performance factors that contribute to greater process utilization on server operating systems as opposed to desktop operating systems. The reason why preemption is detrimental to CPU utilization is a combination of a few different reasons.
+
+\paragraph{TLB and Cache}
+The translation lookaside buffer (TLB) is a hardware structure that assists the memory management unit (MMU) of the CPU in translating virtual addresses into physical addresses. The TLB serves as a cache to look up commonly used virtual addresses and return the corresponding physical address. In computationally expensive portions of code, this unit is advantageous as it prevents unnecessary page lookups when the code is accessing a small region of memory. Likewise, the cache on a CPU provides good speedups to this kind of programs, as well as programs that have good data locality.
+
+These structures work very well so long as the same process is in memory. When a context switch, changing from one process to another, is performed, the values of the cache and TLB are essentially invalidated. The new resident process must now wait for expensive memory accesses to bring in valid TLB entries and cache values. Before that process is even loaded, a scheduling algorithm must first decide which process to run next. This results in less than ideal processor utilization.
+
+It is also difficult to make realtime scheduling guarantees. In applications such as video playback, it is necessary that the playback process be scheduled consistently to ensure jitter-free playback. FLASH is able to make these guarantees due to its asynchronous computation and throughput. Additionally, FLASH minimizes the penalty to cache and TLB invalidation due to scheduler activity, while providing a complete scheduling interface.
 
 \section{Scheduling in the Kernel}
 % Mark
-\lipsum[1]
+% \lipsum[1]
+
+Our research focuses on the open source Linux kernel. In the Linux kernel, the Completely Fair Scheduler (CFS) has been the default scheduler since kernel release 2.6.23 \cite{cfsdesign}. It operates in $ O(log\ n) $ time and is designed to make a real CPU emulate an ideal multi-tasking CPU as much as possible. The CFS scheduler's design is a large part of why it continues to be the default scheduler on most Linux distributions.
+
+\subsection{CFS Design}
+The goal of the CFS is simple; pick the task with the shortest runtime next. In order to be a true multi-tasking scheduler, all processes should run for the same amount of time. A simple approach to this goal is a round-robin scheduler, where each task is run for a pre-determined amount of time, deemed a slice, whether or not it uses all of the time in its slice. The $O(n)$ scheduler used such a design, but it suffered from poor performance as the number of processes increased.
+
+The CFS is able to keep performance minimal by making use of red-black trees. These are a type of self-balancing sorted tree, and the CFS uses them to keep track of task runtime. This means that locating the task with the least runtime is as simple as traversing to the smallest node in the tree. This yields good interactivity and multi-tasking because all processes eligible to run will eventually be run within a round, unlike with the $O(1)$ scheduler that CFS eventually replaced, which used complex heuristics that were subject to miscalculations.
+
+\subsection{Performance}
+The runtime statistics that CFS basis its decision on is part of the \verb|task_struct| structure, which is the representation of a process in Linux. Due to the dynamic number of tasks, these structures are located in the virtual region of kernel memory, and thus can cause the TLB to evict pages, reducing the performance of the previous resident application if that application will be elected to run again, which is common on multi-processor machines. Additionally, tree traversal does not exhibit good cache locality, which will generate cache misses within the scheduler algorithm itself, as well as the former process itself, if it is elected to run again.
+
+Compared to the previous scheduler implementations, CFS does a much better job of true multi-tasking. While these factors are difficult to mitigate from a software approach, they are much more feasible to ameliorate using a software-hardware hybrid approach, along the same idea of the MMU.
 
 \section{FLASH Architecture}
 The FLASH hardware unit is built with ease of replacement of the usual
@@ -192,7 +214,9 @@ implements the current default Linux scheduler CFS.
 
 \section{Evaluation}
 % Mark
-\lipsum[1]
+% \lipsum[1]
+
+There are a few metrics by which we compare scheduler performance. We are mostly concerned with CPU involvement under normal operating conditions, but as the entry point of the two schedulers differ, the point of measurement differs. In the case of CFS, we analyze how many cycles \verb|pick_next_task| requires, since the kernel is already optimized for CFS. in the case of FLASH, we measure how long the DMA read takes
 
 \section{Integration}
 % Chae then Mark
