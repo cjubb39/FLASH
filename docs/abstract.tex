@@ -36,7 +36,7 @@ The translation lookaside buffer (TLB) is a hardware structure that assists the 
 
 These structures work very well so long as the same process is in memory. When a context switch, changing from one process to another, is performed, the values of the cache and TLB are essentially invalidated. The new resident process must now wait for expensive memory accesses to bring in valid TLB entries and cache values. Before that process is even loaded, a scheduling algorithm must first decide which process to run next. This results in less than ideal processor utilization.
 
-It is also difficult to make realtime scheduling guarantees. In applications such as video playback, it is necessary that the playback process be scheduled consistently to ensure jitter-free playback. FLASH is able to make these guarantees due to its asynchronous computation and throughput. Additionally, FLASH minimizes the penalty to cache and TLB invalidation due to scheduler activity, while providing a complete scheduling interface.
+It is also difficult to make real time scheduling guarantees. In applications such as video playback, it is necessary that the playback process be scheduled consistently to ensure jitter-free playback. FLASH is able to make these guarantees due to its asynchronous computation and throughput. Additionally, FLASH minimizes the penalty to cache and TLB invalidation due to scheduler activity, while providing a complete scheduling interface.
 
 \section{Scheduling in the Kernel}
 % Mark
@@ -46,6 +46,17 @@ Our research focuses on the open source Linux kernel. In the Linux kernel, the C
 
 \subsection{CFS Design}
 The goal of the CFS is simple; pick the task with the shortest runtime next. In order to be a true multi-tasking scheduler, all processes should run for the same amount of time. A simple approach to this goal is a round-robin scheduler, where each task is run for a pre-determined amount of time, deemed a slice, whether or not it uses all of the time in its slice. The $O(n)$ scheduler used such a design, but it suffered from poor performance as the number of processes increased.
+
+\begin{figure}
+	\begin{center}
+		%\includegraphics[width=0.65\textwidth]{fig/flash-diagram.png}
+		\includegraphics[width=0.9\linewidth]{fig/mutlitasking.jpg}
+		\caption{
+			Ideal multi-tasking. Taken from \protect\cite{fig:multitask}.
+		}
+		\label{fig:cfs_multitask}
+	\end{center}
+\end{figure}
 
 The CFS is able to keep performance minimal by making use of red-black trees. These are a type of self-balancing sorted tree, and the CFS uses them to keep track of task runtime. This means that locating the task with the least runtime is as simple as traversing to the smallest node in the tree. This yields good interactivity and multi-tasking because all processes eligible to run will eventually be run within a round, unlike with the $O(1)$ scheduler that CFS eventually replaced, which used complex heuristics that were subject to miscalculations.
 
@@ -274,7 +285,7 @@ unbounded (from a realistic hardware perspective) number of tasks.
 
 \section{Conclusion}
 % \lipsum[1]
-In this paper, we present FLASH, a hardware scheduler accelerator designed to replace an operating system scheduler. FLASH performs scheduling decisions in hardware, thus freeing up the CPU and related structures to focuse on computation. FLASH only interrupts the CPU when it has made a new decision, and only if that decision differs from the currently running task, thus reducing unnecessary interruptions. We will show the viability of FLASH hardware as an accelerator akin to the MMU by considering its power requirements and area usage.
+In this paper, we present FLASH, a hardware scheduler accelerator designed to replace an operating system scheduler. FLASH performs scheduling decisions in hardware, thus freeing up the CPU and related structures to focus on computation. FLASH only interrupts the CPU when it has made a new decision, and only if that decision differs from the currently running task, thus reducing unnecessary interruptions. We will show the viability of FLASH hardware as an accelerator akin to the MMU by considering its power requirements and area usage.
 
 \nocite{*}
 {
