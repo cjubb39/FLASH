@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{changepage}
 \usepackage{lipsum}
+\usepackage{booktabs}
 
 \title{FLASH\\Fast Linux Advanced Scheduler Hardware}
 \author{
@@ -220,7 +221,21 @@ There are a few metrics by which we compare scheduler performance. We are mostly
 
 We do not currently have these metrics for our CARGO implementation due to a clock measurement issue on our test machine that is currently being investigated. We also do not have these metrics for our SoC implementation as that is still in progress.
 
-An additional metric is cache and TLB misses and overall cycle count, attainable through the use of the \verb|perf| tool. We provide the results for the CFS scheduler as of Linux 3.19.2; we will also provide the SoC results upon completion.
+An additional metric is cache and TLB misses and overall cycle count, attainable through the use of the \verb|perf| tool. We provide the results for the CFS scheduler as of Linux 3.19.2 (Table \ref{table:perf}); we will also provide the SoC results upon completion.
+
+% Please add the following required packages to your document preamble:
+\begin{table*}[t]
+	\begin{center}
+		\begin{tabular}{@{}lllll@{}}
+			\toprule
+			Implementation & Perf Cycles ($10^6$) & Self Reported Cycles & Context Switches & \% Cache Misses \\ \midrule
+			CFS            & 7.23                               & 4.02                 & 610              & 23              \\
+			FLASH (SoC)    & TBA                                & TBA                  & TBA              & TBA             \\ \bottomrule
+		\end{tabular}
+		\caption{FLASH vs CFS for a busy wait}
+		\label{table:perf}
+	\end{center}
+\end{table*}
 
 We will also give measurements of the overhead involved with communicating with FLASH hardware, in terms of process creation, destruction, and other state changes. By contrast, CFS also has similar overhead in terms of task time accounting.
 
