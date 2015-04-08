@@ -216,7 +216,13 @@ implements the current default Linux scheduler CFS.
 % Mark
 % \lipsum[1]
 
-There are a few metrics by which we compare scheduler performance. We are mostly concerned with CPU involvement under normal operating conditions, but as the entry point of the two schedulers differ, the point of measurement differs. In the case of CFS, we analyze how many cycles \verb|pick_next_task| requires, since the kernel is already optimized for CFS. in the case of FLASH, we measure how long the DMA read takes
+There are a few metrics by which we compare scheduler performance. We are mostly concerned with CPU involvement under normal operating conditions, but as the entry point of the two schedulers differ, the point of measurement differs. In the case of CFS, we analyze how many cycles \verb|pick_next_task| requires, since the kernel is already optimized for CFS. In the case of FLASH, we measure how long the DMA read takes. It would be disingenuous to consider how long a read from memory takes, as the driver duties of FLASH also consume CPU time that are critical to scheduling duties that CFS does not require.
+
+We do not currently have these metrics for our CARGO implementation due to a clock measurement issue on our test machine that is currently being investigated. We also do not have these metrics for our SoC implementation as that is still in progress.
+
+An additional metric is cache and TLB misses and overall cycle count, attainable through the use of the \verb|perf| tool. We provide the results for the CFS scheduler as of Linux 3.19.2; we will also provide the SoC results upon completion.
+
+We will also give measurements of the overhead involved with communicating with FLASH hardware, in terms of process creation, destruction, and other state changes. By contrast, CFS also has similar overhead in terms of task time accounting.
 
 \section{Integration}
 % Chae then Mark
@@ -231,6 +237,9 @@ chosen as a tradeoff between (generally) area and speed.
 
 % more Mark stuff here
 
+In order to rapidly develop FLASH, we began development using a hardware emulator developed at Columbia called CARGO \cite{cargo}. The framework provided allowed us to quickly develop our driver and verify basic functionality. CARGO also provides DMA semantics, allowing us to measure how many cycles from a hardware side of things DMA communication would require.
+
+From CARGO, we move to an Altera System on Chip Field Programmable Gate Array, or just SoC FPGA. This device consists of an FPGA, a programmable block of hardware, interconnected with an ARM CPU. This device allows rapid prototyping of custom hardware and integration on a real system. We will use this SoC to determine how FLASH functions in a non-synthetic environment, and how applicable it would be in real devices.
 
 \section{Related Works}
 % Chae
@@ -239,17 +248,18 @@ desktop environments is that of the context switch and in particular
 scheduling.  FLASH attempts to provide a hardware module which serves as the
 scheduler for the Linux Kernel.  We replace the CFS from the kernel with our
 own implementation in accordance with the major principles of the Completely
-Fair Scheduler\cite{wong2008cfs}.
+Fair Scheduler \cite{wong2008cfs}.
 
 Previous hardware scheduling units focus completely on embedded systems with
-a fixed number of tasks\cite{nakano1995hardware, morton2004hardware,
+a fixed number of tasks \cite{nakano1995hardware, morton2004hardware,
 nacul2007hardware, kuacharoen2003configurable, park2008hardware}.  The major
 novel challenge in escalating to a desktop Linux is handling the dynamic,
 unbounded (from a realistic hardware perspective) number of tasks.
 
 
 \section{Conclusion}
-\lipsum[1]
+% \lipsum[1]
+In this paper, we present FLASH, a hardware scheduler accelerator designed to replace an operating system scheduler. FLASH performs scheduling decisions in hardware, thus freeing up the CPU and related structures to focuse on computation. FLASH only interrupts the CPU when it has made a new decision, and only if that decision differs from the currently running task, thus reducing unnecessary interruptions. We will show the viability of FLASH hardware as an accelerator akin to the MMU by considering its power requirements and area usage.
 
 \nocite{*}
 {
