@@ -40,8 +40,12 @@ system architecture.
 
 \begin{figure}
 	\begin{center}
-		picture here.
-		\caption{System Architecture}
+		%\includegraphics[width=0.65\textwidth]{fig/flash-diagram.png}
+		\includegraphics[width=0.9\linewidth]{fig/flash-diagram.png}
+		\caption{
+			FLASH System Architecture: Interface.  Note the distinction between
+			the \emph{Process Control} and \emph{Scheduling Control} Interfaces.
+		}
 		\label{fig:arch_overview}
 	\end{center}
 \end{figure}
@@ -116,13 +120,18 @@ connect to back-end modules which regulate and control access to the backing
 internal data structures.  We see this internal implementation architecture
 described in Figure~\ref{fig:impl_overview}.
 
-\begin{figure}
+\begin{figure*}
 	\begin{center}
-		implementation overview diagram here
-		\caption{implementation overview}
+		\includegraphics[width=0.9\textwidth]{fig/flash-impl.png}
+		%\includegraphics[width=0.9\linewidth]{fig/flash-impl.png}
+		\caption{
+			FLASH System Architecture: Implementation.  Notice the division
+			between the front-end, back-end, and process data modules.  This
+			allows tightly regulated access to backing process data store.
+		}
 		\label{fig:impl_overview}
 	\end{center}
-\end{figure}
+\end{figure*}
 
 \subsubsection{Front-End Modules}
 As mentioned above, we have a front-end module for each segment of the
@@ -134,6 +143,16 @@ Both of these require querying for the next task to be run.
 The second front-end module corresponds to the process control interface.
 It will simply communicate through the incoming request and update the
 backing store of process state.
+
+\subsubsection{Back-End Modules}
+The FLASH back-end modules serve to regulate access to the backing data
+store.  This is done via two modules: a reading module and a writing module.
+The process control datapath is connected through the writing module as this
+interface is used to modify the state of processes.
+
+Additionally, we have a simple reading module connected to the scheduling
+control interface.  This regulates reads to the backing data store in order
+to determine the next process that ought to be run.
 
 \subsubsection{Storing Process State}
 The current FLASH implementation is a basic version of CFS.  We do not use
@@ -209,7 +228,7 @@ unbounded (from a realistic hardware perspective) number of tasks.
 \lipsum[1]
 
 \nocite{*}
-{\small
+{
 	\bibliographystyle{abbrv}
 	\bibliography{ref}
 }
