@@ -4,6 +4,7 @@ void flash::timer() {
 	time.write(0);
 	wait();
 
+TIMER_LOOP:
 	while (true) {
 		uint64_t tmp;
 		tmp = time.read();
@@ -20,16 +21,19 @@ void flash::initialize() {
 	init_done.write(false);
 	wait();
 
+INIT_RUN_LIST:
 	for (i = 0; i < RUN_QUEUE_SIZE; ++i) {
 		runnable_list[i] = INDEX_POISON;
 	}
 
+INIT_PROCESS_LIST:
 	for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
 		process_list[i].active = 0;
 	}
 
 	init_done.write(true);
 
+INIT_INFINITE_LOOP:
 	while(true) {
 		wait();
 	}
@@ -41,6 +45,7 @@ void flash::tick() {
 	do { wait(); }
 	while (!init_done.read());
 
+TICK_LOOP:
 	while(true) {
 		for (i = 0 ; i < WAIT_PER_TICK; ++i) {
 			wait();
@@ -56,6 +61,7 @@ void flash::tick() {
 int flash::lookup_process(flash_pid_t pid) {
 	int i;
 
+LOOKUP_PROCESS_LOOP:
 	for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
 		if (process_list[i].pid == pid && process_list[i].active) {
 			return i;
@@ -67,6 +73,7 @@ int flash::lookup_process(flash_pid_t pid) {
 int flash::find_empty_slot() {
 	int i;
 
+FIND_EMPTY_LOOP:
 	for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
 		if (!process_list[i].active) {
 			return i;
@@ -78,6 +85,7 @@ int flash::find_empty_slot() {
 int flash::add_task_to_run_queue(int process_index) {
 	int i;
 
+ADD_TASK_RL_EXIST_LOOP:
 	/* check if exists */
 	for (i = 0; i < RUN_QUEUE_SIZE; ++i) {
 		if (runnable_list[i] == process_index) {
@@ -85,6 +93,7 @@ int flash::add_task_to_run_queue(int process_index) {
 		}
 	}
 
+ADD_TASK_RL_ADD_LOOP:
 	/* now try to add */
 	for (i = 0; i < RUN_QUEUE_SIZE; ++i) {
 		if (runnable_list[i] == INDEX_POISON) {
@@ -99,6 +108,7 @@ int flash::add_task_to_run_queue(int process_index) {
 int flash::remove_task_from_run_queue(int process_index) {
 	int i;
 
+REMOVE_FROM_RL:
 	for (i = 0; i < RUN_QUEUE_SIZE; ++i) {
 		if (runnable_list[i] == process_index) {
 			runnable_list[i] = INDEX_POISON;
@@ -108,25 +118,24 @@ int flash::remove_task_from_run_queue(int process_index) {
 	return -1;
 }
 
-
-/*
-	 Lookup table for weight factor for computing virtual runtimes of
-	 processes considering their priority. 
-
-	 Computed using: 1 << 15 * 1.25^(-nice)
-	 USE CASE: time * (NICE_0_LOAD / vr_weight[pri])
- */
-const uint64_t vr_weight[40] =
- {   378,     472,     590,     737,     922,
-	  1153,    1441,    1801,    2252,    2815,
-	  3518,    4398,    5498,    6872,    8590,
-	 10737,   13422,   16777,   20972,   26214,
-	 32768,   40960,   51200,   64000,   80000,
-	100000,  125000,  156250,  195313,  244141,
-	305176,  381470,  476837,  596046,  745058,
-	931323, 1164150, 1455190, 1818990, 2273740};
-
 uint64_t inline flash::calculate_virtual_runtime(uint64_t time, flash_pri_t pri) {
+	/*
+		 Lookup table for weight factor for computing virtual runtimes of
+		 processes considering their priority.
+
+		 Computed using: 1 << 15 * 1.25^(-nice)
+		 USE CASE: time * (NICE_0_LOAD / vr_weight[pri])
+	 */
+	const uint64_t vr_weight[40] =
+	{    378,     472,     590,     737,     922,
+		  1153,    1441,    1801,    2252,    2815,
+		  3518,    4398,    5498,    6872,    8590,
+		 10737,   13422,   16777,   20972,   26214,
+		 32768,   40960,   51200,   64000,   80000,
+		100000,  125000,  156250,  195313,  244141,
+		305176,  381470,  476837,  596046,  745058,
+		931323, 1164150, 1455190, 1818990, 2273740};
+
 	return (time * NICE_0_LOAD) / vr_weight[pri];
 }
 
@@ -230,6 +239,7 @@ flash_task_t flash::get_next_task() {
 	process_list[cur].pr += delta;
 
 
+GET_NEXT_TASK_L1:
 	lowest_vr = -1; /* unsigned */
 	for(i = 0; i < RUN_QUEUE_SIZE; ++i) {
 		flash_task_t tmp_task;
@@ -313,3 +323,6 @@ void flash::schedule() {
 	}
 }
 
+#ifdef __CTOS__
+SC_MODULE_EXPORT(flash)
+#endif
