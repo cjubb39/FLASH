@@ -126,7 +126,7 @@ const uint64_t vr_weight[40] =
 	305176,  381470,  476837,  596046,  745058,
 	931323, 1164150, 1455190, 1818990, 2273740};
 
-uint64_t inline calculate_virtual_runtime(uint64_t time, flash_pri_t pri) {
+uint64_t inline flash::calculate_virtual_runtime(uint64_t time, flash_pri_t pri) {
 	return (time * NICE_0_LOAD) / vr_weight[pri];
 }
 
