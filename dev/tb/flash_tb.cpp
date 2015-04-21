@@ -10,10 +10,27 @@ void flash_tb::load() {
 	/* send new process */
 	unsigned i;
 	flash_task_t task;
+#undef TASKS_TO_SEND
+#define TASKS_TO_SEND 32
 	for (i = 0; i < TASKS_TO_SEND; ++i) {
 		task.pid = i + 1;
-		task.pri = (i + 1) % FLASH_MAX_PRI;
-		task.state = 2 * (i + 1);
+		task.pri = (i + 1) % (FLASH_MAX_PRI - 1) + 1;
+
+		switch(i%4) {
+			case 0:
+				task.state = 0;
+				break;
+			case 1:
+				task.state = 1;
+				break;
+			case 2:
+				task.state = 2;
+				break;
+			case 3:
+				task.state = 4;
+				break;
+		}
+		task.state = 0;
 
 		change_req.write(true);
 		change_type.write(FLASH_CHANGE_NEW);
@@ -34,22 +51,22 @@ void flash_tb::load() {
 	for(i = 0; i < 10000; ++i) {
 		wait();
 	}
-
 	change_req.write(true);
-#if 0
+#if 1
 	change_type.write(FLASH_CHANGE_STATE);
-	change_pid.write(39);
-	change_state.write(EXIT_ZOMBIE);
+	change_pid.write(7);
+	change_state.write(TASK_INTERRUPTIBLE);
 #else
 	change_type.write(FLASH_CHANGE_PRI);
-	change_pid.write(39);
-	change_pri.write(2);
+	change_pid.write(7);
+	change_pri.write(FLASH_MAX_PRI);
 #endif
 	do { wait(); }
 	while (!change_grant.read());
 	change_req.write(false);
 	do { wait(); }
 	while (change_grant.read());
+	cout << "ACTION ON TB" << endl;
 
 	while (true) {
 		wait();
@@ -76,7 +93,7 @@ void flash_tb::source() {
 
 		cout << "SCHED: asked to run: " << pid << endl;
 		wait();
-		for (j = 0; j < 256; ++j)
+		for (j = 0; j < 1024; ++j)
 			wait();
 	}
 

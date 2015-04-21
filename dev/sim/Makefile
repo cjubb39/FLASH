@@ -15,7 +15,7 @@ PARAMS_FILE=.params
 TARGET := flash 
 VPATH := ../src:../tb
 CPP_SRCS := flash.cpp flash_tb.cpp sc_main.cpp
-HDRS := flash.h flash_tb.h
+HDRS := flash.h flash_tb.h flash_sched.h
 OBJS = $(CPP_SRCS:.cpp=.o)
 OBJS += $(C_SRCS:.c=.o)
 
