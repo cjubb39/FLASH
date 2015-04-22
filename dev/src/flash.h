@@ -1,10 +1,25 @@
 #ifndef _FLASH_H_
 #define _FLASH_H_
 
+#define SC_INCLUDE FX
 #include "systemc.h"
 #include <stdint.h>
 
 #include "flash_sched.h"
+
+/* fixed point for division */
+#ifdef __CTOS__
+#define CTOS_FP
+#endif
+
+#ifdef CTOS_FP
+#include <ctos_fx.h>
+#define SC_FIX_t ctos_sc_dt::sc_fixed<64,64>
+#else
+#define SC_FIX_t uint64_t
+#endif
+
+#include "math/div.h"
 
 #ifndef TASK_QUEUE_SIZE
 #error "TASK_QUEUE_SIZE not defined"

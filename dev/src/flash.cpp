@@ -63,8 +63,10 @@ int flash::lookup_process(flash_pid_t pid) {
 
 LOOKUP_PROCESS_LOOP:
 	for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
-		if (process_list[i].pid == pid && process_list[i].active) {
-			return i;
+		/* XXX one if statement ? */
+		if (process_list[i].pid == pid) {
+			if(process_list[i].active)
+				return i;
 		}
 	}
 	return -1; /* no match */
@@ -136,7 +138,18 @@ uint64_t inline flash::calculate_virtual_runtime(uint64_t time, flash_pri_t pri)
 		305176,  381470,  476837,  596046,  745058,
 		931323, 1164150, 1455190, 1818990, 2273740};
 
-	return (time * NICE_0_LOAD) / vr_weight[pri];
+	SC_FIX_t num, den, tret;
+	uint64_t ret;
+	num = time * NICE_0_LOAD;
+	den = vr_weight[pri];
+
+#ifdef CTOS_FP
+	tret = sld::udiv_func<64,64,64,64,64,64>(num, den);
+	ret = tret.range().to_uint64();
+#else
+	ret = num / den;
+#endif
+	return ret;
 }
 
 
@@ -201,6 +214,7 @@ void flash::process_change() {
 			}
 
 			new_task = old_task = process_list[task_index];
+			wait();
 
 			if (req_type & FLASH_CHANGE_PRI) {
 				new_task.pri = task_pri;
@@ -216,6 +230,8 @@ void flash::process_change() {
 			process_list[task_index] = new_task;
 		} // end no new tasks
 
+		wait();
+
 		/* make sure run queue is consistent */
 		if (old_task.state && !new_task.state && new_task.active) {
 			add_task_to_run_queue(task_index);
@@ -228,34 +244,48 @@ void flash::process_change() {
 flash_task_t flash::get_next_task() {
 	size_t i;
 	int possible_next_task_index;
-	uint64_t lowest_vr, delta, delta_w;
+	uint64_t lowest_vr, delta, delta_w, cur_time, start_time;
+	uint64_t vr_tmp, pr_tmp;
 	int cur;
+	flash_pri_t proc_pri;
 
 	/* update current task's runtime */
 	cur = current_task_index.read();
-	delta = time.read() - process_list[cur].start_time;
-	delta_w = calculate_virtual_runtime(delta, process_list[cur].pri);
-	process_list[cur].vr += delta_w;
-	process_list[cur].pr += delta;
+	cur_time = time.read();
+	start_time = process_list[cur].start_time;
+	proc_pri = process_list[cur].pri;
+
+	wait();
+	delta = cur_time - start_time;
+	delta_w = calculate_virtual_runtime(delta, proc_pri);
+
+	wait();
+	vr_tmp = process_list[cur].vr;
+	vr_tmp += delta_w;
+	pr_tmp = process_list[cur].pr;
+	pr_tmp += delta;
+	wait();
+	process_list[cur].vr = vr_tmp;
+	process_list[cur].pr = pr_tmp;
 
 
-GET_NEXT_TASK_L1:
 	lowest_vr = -1; /* unsigned */
+GET_NEXT_TASK_L1:
 	for(i = 0; i < RUN_QUEUE_SIZE; ++i) {
 		flash_task_t tmp_task;
 		int process_index;
 
 		process_index = runnable_list[i];
-		if (process_index == INDEX_POISON) {
-			continue;
-		}
+		wait();
+		if (process_index != INDEX_POISON) {
 
-		tmp_task = process_list[process_index];
-		//cerr << "TMP; LOW:: " << tmp_task.vr << "; " << lowest_vr << endl;
-		if (tmp_task.vr < lowest_vr) {
-			//cerr << "new lower task" << endl;
-			possible_next_task_index = process_index;
-			lowest_vr = tmp_task.vr;
+			tmp_task = process_list[process_index];
+			//cerr << "TMP; LOW:: " << tmp_task.vr << "; " << lowest_vr << endl;
+			if (tmp_task.vr < lowest_vr) {
+				//cerr << "new lower task" << endl;
+				possible_next_task_index = process_index;
+				lowest_vr = tmp_task.vr;
+			}
 		}
 	}
 
