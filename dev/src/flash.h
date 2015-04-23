@@ -93,7 +93,9 @@ SC_MODULE(flash) {
 	sc_signal<int> current_task_index;
 	sc_signal<uint64_t> time;
 
-	flash_task_t get_next_task();
+	/* TODO add markers for end of valid array */
+
+	/*flash_task_t*/ flash_pid_t get_next_task();
 	int lookup_process(flash_pid_t);
 	int find_empty_slot();
 	int add_task_to_run_queue(int process_index);

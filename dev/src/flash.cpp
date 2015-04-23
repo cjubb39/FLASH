@@ -26,11 +26,6 @@ INIT_RUN_LIST:
 		runnable_list[i] = INDEX_POISON;
 	}
 
-INIT_PROCESS_LIST:
-	for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
-		process_list[i].active = 0;
-	}
-
 	init_done.write(true);
 
 INIT_INFINITE_LOOP:
@@ -63,7 +58,6 @@ int flash::lookup_process(flash_pid_t pid) {
 
 LOOKUP_PROCESS_LOOP:
 	for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
-		/* XXX one if statement ? */
 		if (process_list[i].pid == pid) {
 			if(process_list[i].active)
 				return i;
@@ -159,10 +153,19 @@ void flash::process_change() {
 	flash_pri_t task_pri;
 	flash_state_t task_state;
 	int task_index;
+	int i;
 
 	flash_task_t old_task, new_task;
 
+INIT_PROCESS_LIST:
+	for (i = 0; i < TASK_QUEUE_SIZE; ++i) {
+		process_list[i].active = 0;
+	}
+
 	change_grant.write(false);
+	/* end reset beh */
+	wait();
+
 	do { wait(); }
 	while (!init_done.read());
 
@@ -196,12 +199,18 @@ void flash::process_change() {
 			new_task.pri = task_pri;
 			new_task.state = task_state;
 			new_task.active = 1;
-			new_task.start_time = 0;
+			//new_task.start_time = 0;
 			new_task.vr = 0;
 			new_task.pr = 0;
 			new_task.running = 0;
 
-			process_list[task_index] = new_task;
+			process_list[task_index].pid = new_task.pid;
+			process_list[task_index].pri = new_task.pri;
+			process_list[task_index].state = new_task.state;
+			process_list[task_index].active = new_task.active;
+			process_list[task_index].vr = new_task.vr;
+			process_list[task_index].pr = new_task.pr;
+			process_list[task_index].running = new_task.running;
 			//cerr << "new process " << task_index << endl;;
 		} else {
 			/* no new tasks, no new tasks, no new tasks, no no new */
@@ -213,21 +222,26 @@ void flash::process_change() {
 				continue;
 			}
 
-			new_task = old_task = process_list[task_index];
+			/* don't load whole struct for CtoS reasons. We get extra reads/writes */
+			new_task.state = old_task.state = process_list[task_index].state;
+			//new_task.pri = old_task.pri = process_list[task_index].pri;
+			new_task.active = old_task.active = process_list[task_index].active;
 			wait();
 
 			if (req_type & FLASH_CHANGE_PRI) {
 				new_task.pri = task_pri;
+				process_list[task_index].pri = new_task.pri;
 			}
 
 			if (req_type & FLASH_CHANGE_STATE) {
 				new_task.state = task_state;
+				process_list[task_index].state = new_task.state;
 				if (task_state & EXIT_TRACE) {
 					new_task.active = 0;
+					process_list[task_index].active = new_task.active;
 				}
 			}
 
-			process_list[task_index] = new_task;
 		} // end no new tasks
 
 		wait();
@@ -241,7 +255,7 @@ void flash::process_change() {
 	}
 }
 
-flash_task_t flash::get_next_task() {
+flash_pid_t /*flash_task_t*/ flash::get_next_task() {
 	size_t i;
 	int possible_next_task_index;
 	uint64_t lowest_vr, delta, delta_w, cur_time, start_time;
@@ -251,6 +265,7 @@ flash_task_t flash::get_next_task() {
 
 	/* update current task's runtime */
 	cur = current_task_index.read();
+	wait();
 	cur_time = time.read();
 	start_time = process_list[cur].start_time;
 	proc_pri = process_list[cur].pri;
@@ -286,6 +301,7 @@ GET_NEXT_TASK_L1:
 				possible_next_task_index = process_index;
 				lowest_vr = tmp_task.vr;
 			}
+			wait();
 		}
 	}
 
@@ -297,11 +313,14 @@ GET_NEXT_TASK_L1:
 	cerr << "GNT:: next " << possible_next_task_index << "; "  << process_list[possible_next_task_index].vr << "; " << process_list[possible_next_task_index].pr << endl;
 #endif
 
-	process_list[possible_next_task_index].start_time = time.read();
+	uint64_t new_start_time = time.read();
+	wait();
+
+	process_list[possible_next_task_index].start_time = new_start_time;//time.read();
 	process_list[possible_next_task_index].running = 1;
 	current_task_index.write(possible_next_task_index);
 
-	return process_list[possible_next_task_index];
+	return process_list[possible_next_task_index].pid;
 }
 
 void flash::schedule() {
@@ -319,7 +338,8 @@ void flash::schedule() {
 		while (!tick_req_internal.read() && !sched_req.read());
 
 		/* decide what's next */
-		next_proc_pid = get_next_task().pid;
+		next_proc_pid = get_next_task();//.pid;
+		wait();
 
 		if (tick_req_internal.read()) {
 			/* four phase handshake (internal) */

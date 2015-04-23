@@ -18,7 +18,7 @@ set_attr header_files [list ../src/flash.h ../src/flash_sched.h] /designs/flash
 set_attr compile_flags " -w -I../src/ -I/opt/zynq-math/src/ -DTASK_QUEUE_SIZE=128 -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=128" /designs/flash
 set_attr top_module_path "flash" /designs/flash
 set_attr build_flat "true" /designs/flash
-define_clock -name clock_0 -period 20000 -rise 0 -fall 10000
+define_clock -name clk -period 10000 -rise 0 -fall 5000
 define_sim_config -makefile_name ../ctos_sim_unisim/Makefile -model_dir flash -simulator_args "-I../src/ -I/opt/zynq-math/src/ -I../tb/ -sc_main -I../syn/flash/ -D__CTOS__ -DTASK_QUEUE_SIZE=128 -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=128 -DTASKS_TO_SEND=128 -DTASKS_TO_READ=512 " -testbench_files "../tb/flash_tb.cpp ../tb/sc_main.cpp" -testbench_kind self_checking -success_msg ""
 define_synth_config -run_dir "run_synth_gates" -standard_flow "default_synthesis_flow" -config_file_name ""
 
@@ -36,35 +36,47 @@ set_attr reset_registers internal_and_outputs [get_design]
 build
 write_sim_makefile -overwrite
 
-set_attr default_scheduling_effort low [get_design]
+# from ctosgui but not from debayer
 #write_sim -type verilog -suffix _post_build -birthday -dir ./model /designs/flash/modules/flash.
 #write_wrapper -o ./model/flash_ctos_wrapper.h /designs/flash/modules/flash.
 
-# loops
-#break_combinational_loop /designs/flash/modules/flash/behaviors/get_next_task/nodes/GET_NEXT_TASK_L1_for_begin
-break_combinational_loop /designs/flash/modules/flash/behaviors/remove_task_from_run_queue/nodes/REMOVE_FROM_RL_for_begin
-break_combinational_loop /designs/flash/modules/flash/behaviors/add_task_to_run_queue/nodes/ADD_TASK_RL_ADD_LOOP_for_begin
-break_combinational_loop /designs/flash/modules/flash/behaviors/add_task_to_run_queue/nodes/ADD_TASK_RL_EXIST_LOOP_for_begin
-break_combinational_loop /designs/flash/modules/flash/behaviors/udiv_func_64__64__64__64__64__64_/nodes/DIVIDE_LOOP_for_begin
-break_combinational_loop /designs/flash/modules/flash/behaviors/lookup_process/nodes/LOOKUP_PROCESS_LOOP_for_begin
-break_combinational_loop /designs/flash/modules/flash/behaviors/find_empty_slot/nodes/FIND_EMPTY_LOOP_for_begin
-break_combinational_loop /designs/flash/modules/flash/behaviors/flash_initialize/nodes/INIT_PROCESS_LIST_for_begin
-break_combinational_loop /designs/flash/modules/flash/behaviors/flash_initialize/nodes/INIT_RUN_LIST_for_begin
-unroll_loop /designs/flash/modules/flash/behaviors/flash_tick/nodes/for_ln50
+set_attr default_scheduling_effort low [get_design]
 
-# functions
-inline /designs/flash/modules/flash/behaviors/remove_task_from_run_queue /designs/flash/modules/flash/behaviors/lookup_process /designs/flash/modules/flash/behaviors/get_next_task /designs/flash/modules/flash/behaviors/find_empty_slot /designs/flash/modules/flash/behaviors/calculate_virtual_runtime /designs/flash/modules/flash/behaviors/add_task_to_run_queue
+
+# arrays
+flatten_array  /designs/flash/modules/flash/arrays/process_list_active
+
+#functions
+inline /designs/flash/modules/flash/behaviors/udiv_func_64__64__64__64__64__64_ /designs/flash/modules/flash/behaviors/remove_task_from_run_queue /designs/flash/modules/flash/behaviors/lookup_process /designs/flash/modules/flash/behaviors/get_next_task /designs/flash/modules/flash/behaviors/find_empty_slot /designs/flash/modules/flash/behaviors/calculate_virtual_runtime /designs/flash/modules/flash/behaviors/add_task_to_run_queue
+
+# loops
+break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/ADD_TASK_RL_ADD_LOOP_for_begin
+break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/ADD_TASK_RL_EXIST_LOOP_for_begin
+break_combinational_loop /designs/flash/modules/flash/behaviors/flash_schedule/nodes/DIVIDE_LOOP_for_begin
+break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/FIND_EMPTY_LOOP_for_begin
+break_combinational_loop /designs/flash/modules/flash/behaviors/flash_initialize/nodes/INIT_RUN_LIST_for_begin
+break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/LOOKUP_PROCESS_LOOP_for_begin
+break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/REMOVE_FROM_RL_for_begin
+unroll_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/INIT_PROCESS_LIST_for_begin
 
 # memory
-allocate_prototype_memory /designs/flash/modules/flash/arrays/runnable_list
-allocate_prototype_memory /designs/flash/modules/flash/arrays/process_list_vr
-allocate_prototype_memory /designs/flash/modules/flash/arrays/process_list_state
-allocate_prototype_memory /designs/flash/modules/flash/arrays/process_list_start_time
-allocate_prototype_memory /designs/flash/modules/flash/arrays/process_list_pri
-allocate_prototype_memory /designs/flash/modules/flash/arrays/process_list_pid
-allocate_prototype_memory /designs/flash/modules/flash/arrays/process_list_active
+#allocate_builtin_ram -read_interfaces 2 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_pid
+#allocate_builtin_ram -read_interfaces 1 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_pri
+#allocate_builtin_ram -read_interfaces 1 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_start_time
+#allocate_builtin_ram -read_interfaces 1 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_state
+#allocate_builtin_ram -read_interfaces 1 -write_interfaces 2 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_vr
+#allocate_builtin_ram -read_interfaces 2 -write_interfaces 2 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/runnable_list
 
-# scheduling
+
+allocate_builtin_ram -read_interfaces 1 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_pri
+#allocate_builtin_ram -read_interfaces 1 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_start_time
+allocate_prototype_memory /designs/flash/modules/flash/arrays/process_list_start_time
+allocate_builtin_ram -read_interfaces 1 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_state
+allocate_builtin_ram -read_interfaces 2 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_pid
+allocate_builtin_ram -read_interfaces 1 -write_interfaces 2 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_vr
+allocate_builtin_ram -read_interfaces 2 -write_interfaces 2 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/runnable_list
+
+set_attr scheduling_effort "medium" /designs/flash/modules/flash/behaviors/flash_process_change
 set_attr relax_latency "true" /designs/flash/modules/flash/behaviors/flash_initialize
 set_attr relax_latency "true" /designs/flash/modules/flash/behaviors/flash_tick
 set_attr relax_latency "true" /designs/flash/modules/flash/behaviors/flash_process_change
@@ -81,5 +93,4 @@ write_rtl  -file ./flash/flash\_rtl.v /designs/flash/modules/flash
 #Report time and area
 report_timing > timing.txt
 report_area > area.txt
-
 
