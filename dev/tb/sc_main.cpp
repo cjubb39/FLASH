@@ -9,8 +9,6 @@ int sc_main(int, char**) {
 	sc_signal<bool> rst;
 	sc_signal<bool> flash_rst;
 
-	sc_signal<bool>     operational;
-
 	/* schedule requests */
 	sc_signal<bool>        sched_req;
 	sc_signal<bool>        sched_grant;
@@ -33,7 +31,6 @@ int sc_main(int, char**) {
 
 	dut.clk(clk);
 	dut.rst(flash_rst);
-	dut.operational(operational);
 	dut.sched_req(sched_req);
 	dut.sched_grant(sched_grant);
 	dut.next_process(next_process);
@@ -49,7 +46,6 @@ int sc_main(int, char**) {
 	tb.clk(clk);
 	tb.rst(rst);
 	tb.flash_rst(flash_rst);
-	tb.operational(operational);
 	tb.sched_req(sched_req);
 	tb.sched_grant(sched_grant);
 	tb.next_process(next_process);

@@ -19,8 +19,6 @@ SC_MODULE(flash_tb) {
 	sc_in<bool> rst;
 	sc_out<bool> flash_rst;
 
-	sc_in<bool> operational;
-
 	/* schedule requests */
 	sc_out<bool>        sched_req;
 	sc_in <bool>        sched_grant;
