@@ -30,7 +30,7 @@
 
 /* end of sched.h */
 
-typedef uint32_t flash_pid_t;
+typedef uint16_t flash_pid_t;
 typedef uint8_t  flash_pri_t;
 typedef uint16_t flash_state_t;
 typedef uint8_t  flash_change_t;

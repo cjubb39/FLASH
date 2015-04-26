@@ -15,11 +15,11 @@ set_attr auto_write_models "true" /designs/flash
 define_sim_config -model_dir "./model" /designs/flash
 set_attr source_files [list ../src/flash.cpp] /designs/flash
 set_attr header_files [list ../src/flash.h ../src/flash_sched.h] /designs/flash
-set_attr compile_flags " -w -I../src/ -I/opt/zynq-math/src/ -DTASK_QUEUE_SIZE=128 -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=128" /designs/flash
+set_attr compile_flags " -w -I../src/ -I/opt/zynq-math/src/ -DTASK_QUEUE_SIZE=256  -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=128" /designs/flash
 set_attr top_module_path "flash" /designs/flash
 set_attr build_flat "true" /designs/flash
 define_clock -name clk -period 20000 -rise 0 -fall 10000
-define_sim_config -makefile_name ../ctos_sim_unisim/Makefile -model_dir flash -simulator_args "-I../src/ -I/opt/zynq-math/src/ -I../tb/ -sc_main -I../syn/flash/ -D__CTOS__ -DTASK_QUEUE_SIZE=128 -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=128 -DTASKS_TO_SEND=128 -DTASKS_TO_READ=512 " -testbench_files "../tb/flash_tb.cpp ../tb/sc_main.cpp" -testbench_kind self_checking -success_msg ""
+define_sim_config -makefile_name ../ctos_sim_unisim/Makefile -model_dir flash -simulator_args "-I../src/ -I/opt/zynq-math/src/ -I../tb/ -sc_main -I../syn/flash/ -D__CTOS__ -DTASK_QUEUE_SIZE=256  -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=128 -DTASKS_TO_SEND=128 -DTASKS_TO_READ=512 " -testbench_files "../tb/flash_tb.cpp ../tb/sc_main.cpp" -testbench_kind self_checking -success_msg ""
 define_synth_config -run_dir "run_synth_gates" -standard_flow "default_synthesis_flow" -config_file_name ""
 
 # implmentation
@@ -57,7 +57,8 @@ break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_ch
 break_combinational_loop /designs/flash/modules/flash/behaviors/flash_initialize/nodes/INIT_RUN_LIST_for_begin
 break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/LOOKUP_PROCESS_LOOP_for_begin
 break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/REMOVE_FROM_RL_for_begin
-unroll_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/INIT_PROCESS_LIST_for_begin
+#unroll_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/INIT_PROCESS_LIST_for_begin
+break_combinational_loop /designs/flash/modules/flash/behaviors/flash_process_change/nodes/INIT_PROCESS_LIST_for_begin
 
 # memory
 #allocate_builtin_ram -read_interfaces 2 -write_interfaces 1 -sync_read -clock /designs/flash/modules/flash/nets/clk /designs/flash/modules/flash/arrays/process_list_pid
@@ -82,7 +83,7 @@ set_attr relax_latency "true" /designs/flash/modules/flash/behaviors/flash_tick
 set_attr relax_latency "true" /designs/flash/modules/flash/behaviors/flash_process_change
 set_attr relax_latency "true" /designs/flash/modules/flash/behaviors/flash_schedule
 set_attr relax_latency "true" /designs/flash/modules/flash/behaviors/flash_timer
-schedule -passes 200 -post_optimize none -verbose /designs/flash/modules/flash
+schedule -passes 200 -post_optimize advanced -verbose /designs/flash/modules/flash
 
 allocate_registers /designs/flash
 
