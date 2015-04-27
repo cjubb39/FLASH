@@ -10,3 +10,6 @@
 [submodule "cycloneV/linux"]
 	path = cycloneV/linux
 	url = https://github.com/altcrauer/linux.git
+[submodule "cycloneV/u-boot-socfpga"]
+	path = cycloneV/u-boot-socfpga
+	url = git://git.rocketboards.org/u-boot-socfpga.git
