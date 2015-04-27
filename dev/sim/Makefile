@@ -5,9 +5,17 @@ CC := g++
 LIBS   := -lsystemc
 LIBDIR = -L. -L$(SYSTEMC)/lib-$(TARGET_ARCH)
 
-INCDIR = -I../src -I../tb -I$(SYSTEMC)/include -I$(TLM)/include/tlm
+CTOS_ROOT := $(CTOS_PATH)
+CTOS_INCLUDES := -I$(CTOS_ROOT)/share/ctos/include \
+	-I$(CTOS_ROOT)/share/ctos/include/ctos_fx \
+	-I$(CTOS_ROOT)/share/ctos/include/ctos_tlm \
+	-I$(CTOS_ROOT)/share/ctos/include/ctos_flex_channels
+SLD_MATH_DIR=/opt/zynq-math/src/
 
-CFLAGS ?= -g
+INCDIR = -I../src -I../tb -I$(SYSTEMC)/include -I$(TLM)/include/tlm \
+				 -I$(SLD_MATH_DIR) $(CTOS_INCLUDES)
+
+CFLAGS ?= -g -DCTOS_FP
 include Makefile.params # after CFLAGS defined
 
 PARAMS_FILE=.params
@@ -15,7 +23,7 @@ PARAMS_FILE=.params
 TARGET := flash 
 VPATH := ../src:../tb
 CPP_SRCS := flash.cpp flash_tb.cpp sc_main.cpp
-HDRS := flash.h flash_tb.h
+HDRS := flash.h flash_tb.h flash_sched.h
 OBJS = $(CPP_SRCS:.cpp=.o)
 OBJS += $(C_SRCS:.c=.o)
 

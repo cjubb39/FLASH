@@ -30,7 +30,7 @@
 
 /* end of sched.h */
 
-typedef uint32_t flash_pid_t;
+typedef uint16_t flash_pid_t;
 typedef uint8_t  flash_pri_t;
 typedef uint16_t flash_state_t;
 typedef uint8_t  flash_change_t;
@@ -39,11 +39,18 @@ typedef struct {
 	flash_pid_t pid;
 	flash_pri_t pri;
 	flash_state_t state;
-	unsigned active :1;
+	uint64_t start_time;
+	uint64_t vr;
+	uint64_t pr;
+	unsigned running :1; /* currently exeucting */
+	unsigned active :1;  /* valid bit on whole entry */
 } flash_task_t;
 
 #define FLASH_MAX_PROC         1024
-#define FLASH_MAX_PRI          8
+#define FLASH_MAX_PRI          39
+#define FLASH_HALF_MAX_PRI     (FLASH_MAX_PRI / 2)
+
+#define NICE_0_LOAD            (1ULL << 20)
 
 #define FLASH_CHANGE_PRI       (1 << 0)
 #define FLASH_CHANGE_STATE     (1 << 1)
