@@ -1,4 +1,4 @@
-module file_system (
+module flash_wrapper (
 	input clk,
 	input rst,
 
@@ -20,30 +20,39 @@ module file_system (
 
 	/* HPS interface */
 	output        hps_tick_irq,
-	input         hps_sched_req,
-	output [15:0] hps_next_process,
+	output [47:0] hps_next_process,
+	input         hps_read,
 
 	input  [47:0] hps_change_data,
-	input         hps_change_req
+
+	input         hps_req,
+	input         hps_address /* change (1) or sched req (0) */
 );
 
-wire  [7:0] change_type;
-wire [15:0] change_pid;
-wire  [7:0] change_pri;
-wire [15:0] change_state;
-wire [15:0] next_process;
+logic  [7:0] change_type;
+logic [15:0] change_pid;
+logic  [7:0] change_pri;
+logic [15:0] change_state;
+logic [47:0] next_process;
 
-wire        sched_req; 
-wire        tick_grant;
-wire        change_req;
+/* convert to sched and change requests */
+logic        hps_sched_req;
+logic        hps_change_req;
 
-wire        tick_irq;
+logic        sched_req; 
+logic        tick_grant;
+logic        change_req;
+
+logic        tick_irq;
 
 assign change_type  = hps_change_data [7:0];
 assign change_pid   = hps_change_data [23:8];
 assign change_pri   = hps_change_data [31:24];
 assign change_state = hps_change_data [47:32];
 assign hps_next_process = next_process;
+
+assign hps_sched_req  = hps_req & !hps_address;
+assign hps_change_req = hps_req & hps_address; 
 
 assign f_sched_req  = sched_req;
 assign f_tick_grant = tick_grant;
@@ -52,21 +61,23 @@ assign f_change_req = change_req;
 assign hps_tick_irq = tick_irq;
 
 always_ff @(posedge clk) begin
-	next_process = f_next_process;
+	next_process[15:0]  <= f_next_process;
+	next_process[47:16] <= 32'b0;
 end
+
 
 /* interrupt handling */
 always_ff @(posedge clk) begin
 	if (rst) begin
 	end else begin
 		if (f_tick_req && !f_tick_grant) begin
-			f_tick_grant <= 1'b1;
-			hps_tick_irq <= 1'b1;
+			tick_grant <= 1'b1;
+			tick_irq <= 1'b1;
 		end else if (f_tick_req && f_tick_grant) begin
 		end else if (!f_tick_req && f_tick_grant) begin
-			f_tick_grant <= 1'b0;
-			hps_tick_irq <= 1'b0;
-		end else if (!f_tick_req && !f_tick_grant) begin
+			tick_grant <= 1'b0;
+		end else if (!f_tick_req && !f_tick_grant && hps_read) begin
+			tick_irq <= 1'b0;
 		end
 	end
 end
@@ -76,10 +87,10 @@ always_ff @(posedge clk) begin
 	if (rst) begin
 	end else begin
 		if (hps_sched_req && !f_sched_req && !f_sched_grant) begin
-			f_sched_req <= 1'b1;
+			sched_req <= 1'b1;
 		end else if (f_sched_req && !f_sched_grant) begin
 		end else if (f_sched_req && f_sched_grant) begin
-			f_sched_req <= 1'b0;
+			sched_req <= 1'b0;
 		end else if (!f_sched_req && f_sched_grant) begin
 		end
 
@@ -97,10 +108,10 @@ always_ff @(posedge clk) begin
 	if (rst) begin
 	end else begin
 		if (hps_change_req && !f_change_req && !f_change_grant) begin
-			f_change_req <= 1'b1;
+			change_req <= 1'b1;
 		end else if (f_change_req && !f_change_grant) begin
 		end else if (f_change_req && f_change_grant) begin
-			f_change_req <= 1'b0;
+			change_req <= 1'b0;
 		end else if (!f_change_req && f_change_grant) begin
 		end
 
