@@ -15,20 +15,21 @@ set_attr auto_write_models "true" /designs/flash
 define_sim_config -model_dir "./model" /designs/flash
 set_attr source_files [list ../src/flash.cpp] /designs/flash
 set_attr header_files [list ../src/flash.h ../src/flash_sched.h] /designs/flash
-set_attr compile_flags " -w -I../src/ -I/opt/zynq-math/src/ -DTASK_QUEUE_SIZE=256  -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=128" /designs/flash
+set_attr compile_flags " -w -I../src/ -I/opt/zynq-math/src/ -DTASK_QUEUE_SIZE=512  -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=50000" /designs/flash
 set_attr top_module_path "flash" /designs/flash
 set_attr build_flat "true" /designs/flash
 define_clock -name clk -period 20000 -rise 0 -fall 10000
-define_sim_config -makefile_name ../ctos_sim_unisim/Makefile -model_dir flash -simulator_args "-I../src/ -I/opt/zynq-math/src/ -I../tb/ -sc_main -I../syn/flash/ -D__CTOS__ -DTASK_QUEUE_SIZE=256  -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=128 -DTASKS_TO_SEND=128 -DTASKS_TO_READ=512 " -testbench_files "../tb/flash_tb.cpp ../tb/sc_main.cpp" -testbench_kind self_checking -success_msg ""
+define_sim_config -makefile_name ../ctos_sim_unisim/Makefile -model_dir flash -simulator_args "-I../src/ -I/opt/zynq-math/src/ -I../tb/ -sc_main -I../syn/flash/ -D__CTOS__ -DTASK_QUEUE_SIZE=512  -DRUN_QUEUE_SIZE=64 -DWAIT_PER_TICK=50000 -DTASKS_TO_SEND=128 -DTASKS_TO_READ=512 " -testbench_files "../tb/flash_tb.cpp ../tb/sc_main.cpp" -testbench_kind self_checking -success_msg ""
 define_synth_config -run_dir "run_synth_gates" -standard_flow "default_synthesis_flow" -config_file_name ""
 
 # implmentation
 #set_attr implementation_target FPGA [get_design]
-#set_attr fpga_install_path /opt/altera/quartus/14.1/quartus/linux64/quartus_sta [get_design]
-#set_attr fpga_target [list Altera Cyclone2 EP2C35F672C6] [get_design]
+#set_attr fpga_install_path /opt/altera/quartus/14.0/quartus/linux64/quartus_sta [get_design]
+#set_attr fpga_target [list Altera CycloneV 5CSXFC6D6F31C8ES] [get_design]
 set_attr implementation_target FPGA [get_design]
 set_attr fpga_install_path /tools/xilinx/14.6/ISE_DS/ISE/bin/lin64/xst [get_design]
 set_attr fpga_target [list Xilinx virtex7 xc7vx485t-2-ffg1761] [get_design]
+
 set_attr verilog_use_indexed_part_select false [get_design]
 set_attr reset_registers internal_and_outputs [get_design]
 
