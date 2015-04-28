@@ -12,4 +12,4 @@ preloader_with_header.img
 soc_system.dtb
 soc_system.rbf
 u-boot.img
-
+linux-socfpga*
