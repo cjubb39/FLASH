@@ -1,3 +1,15 @@
 gcc-linaro-arm-linux-gnueabihf-4.7-2012.11-20121123_linux*
 musebox-final*
 soc_system_13_0_0_06252013_90253*
+bootloader.img
+buildroot-2013.11.tar.gz
+buildroot-2013.11/
+linaro-quantal-nano-20130422-342.tar.gz
+linaro-quantal-nano-20130422-342/
+linux-sockit-gsrd-13.1-bin.tar.gz
+linux-sockit-gsrd-13.1-bin/
+preloader_with_header.img
+soc_system.dtb
+soc_system.rbf
+u-boot.img
+

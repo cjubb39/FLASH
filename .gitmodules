@@ -16,3 +16,6 @@
 [submodule "cycloneV/linux-socfpga"]
 	path = cycloneV/linux-socfpga
 	url = git://git.rocketboards.org/linux-socfpga.git
+[submodule "cycloneV/freezer"]
+	path = cycloneV/freezer
+	url = git@github.com:cjubb39/freezer.git
