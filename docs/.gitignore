@@ -17,3 +17,6 @@
 !fig/*.pdf
 !fig/*.eps
 !fig/*.ps
+*.fdb_latexmk
+*.synctex.gz
+

@@ -13,3 +13,7 @@ soc_system.dtb
 soc_system.rbf
 u-boot.img
 linux-socfpga*
+*.deb
+arrow_vga_38.patch
+oprofile_1.0.0.orig.tar.gz
+
