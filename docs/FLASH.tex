@@ -65,16 +65,16 @@ The $ O(1) $ scheduler was introduced to solve the problem of large number of ta
 		%\includegraphics[width=0.65\textwidth]{fig/flash-diagram.png}
 		\includegraphics[width=0.9\linewidth]{fig/rbtree.png}
 		\caption{
-			A sample red black tree taken fron \cite{wiki:rbtree}. The choice of color is arbitrary, and the distinction is used to maintain the balancing property of the tree.
+			A sample red black tree taken fron \protect\cite{wiki:rbtree}. The choice of color is arbitrary, and the distinction is used to maintain the balancing property of the tree.
 		}
 		\label{fig:rbtree}
 	\end{center}
 \end{figure}
 
-The CFS scheduler is conceptually simple; it aims to implement an ideal multi-tasking CPU \cite{cfsdesign}. An ideal mutli-tasking CPU assigns equal time to all processes assigned to it, which is essentially a restatement of round-robin scheduling \ref{fig:cfs_multitask}. As \emph{expired} and \emph{active} arrays are the basis of the $ O(1) $ scheduler, red black trees are the basis of CFS. Red black trees are a type of self balancing binary search tree, and in the case of CFS, are ordered based on the virtual runtime of processes, as defined by the number of nanoseconds in CPU residence. This type of accounting affords CFS greater granularity than the other process schedulers, as it has no notion of a timeslice. Instead, CFS simply chooses the task with the smallest total runtime (with weighting applied for priority) and schedules it to be run next. This allows CFS to emulate a round-robin scheduler while offering greater granularity. CFS operates at $ O(log n) $ efficiency (inserting a task back into the red black tree), which is less efficient than the $ O(1) $ scheduler
+The CFS scheduler is conceptually simple; it aims to implement an ideal multi-tasking CPU \cite{cfsdesign}. An ideal mutli-tasking CPU assigns equal time to all processes assigned to it, which is essentially a restatement of round-robin scheduling \ref{fig:cfs_multitask}. As \emph{expired} and \emph{active} arrays are the basis of the $ O(1) $ scheduler, red black trees are the basis of CFS. Red black trees are a type of self balancing binary search tree, and in the case of CFS, are ordered based on the virtual runtime of processes, as defined by the number of nanoseconds in CPU residence. This type of accounting affords CFS greater granularity than the other process schedulers, as it has no notion of a timeslice. Instead, CFS simply chooses the task with the smallest total runtime (with weighting applied for priority) and schedules it to be run next. This allows CFS to emulate a round-robin scheduler while offering greater granularity. Additionally, CFS is conceptually simpler and has a much smaller code footprint, which is better for embedded environments, than the $ O(1) $ scheduler.
 
-\subsection{Limitations}
-
+\subsubsection{Limitations}
+CFS operates at $ O(log n) $ efficiency (inserting a task back into the red black tree), which is less efficient than the $ O(1) $ scheduler, but CFS achieves fairness by virtue of its implementation, without favoring any particular kind of task (e.g. interactive vs non-interactive).
 
 \section{Related Works}
 \label{sec:related_works}
