@@ -372,9 +372,10 @@ U-Boot is a bootloader targetted for embedded devices, similar to GRUB for deskt
 The kernel image is cross built using the GCC ARM v7 toolchain, using the sources from rocketboards.org configured for the Cyclone V SoCKiT. These sources contain branches for a variety of SoC devices as well as configurations for accessing their hardware, with the Cyclone V layout shown in Figure \ref{fig:cyclone_diag}. Then to boot Linux on the SoC, the SoCKiT must be configured to boot from the appropriate source, either over ethernet using BOOTP or as in our case, from a micro SD card. The U-Boot image is used to bootstrap the Linux kernel \emph{uImage} also located on that same source. 
 
 \subsubsection{Ubuntu Linaro}
+\label{subsubsec:linaro}
 However, a root filesystem still needs to be provided. There are two main choices; a Buildroot distribution, which is a distribution targeted specifically for embedded devices. We will talk more about Buildroot in Section \ref{sec:eng_exp}. The option we chose was Ubuntu Linaro, a distribution of Ubuntu targeted for ARM devices. Since the Cyclone V contains a relatively powerful ARM processor, it is capable of running a full desktop Linux distribution backed by the micro SD card. We use this as our basis of evaluation to determine the relevance of FLASH in a practical device such as a smartphone or Chromebook. The Ubuntu Linaro distribution also has access to a larger collection of software, such as Xorg and gcc, both of which were to be part of our evaluation. The Linaro distribution can be downloaded as an archive containing the entire root filesystem, and then extracted to whichever source the kernel will be booted from.
 
-\subsection{Kernel mods}
+\subsection{Kernel Modifications}
 % Chae
 \lipsum[1-3]
 
@@ -382,24 +383,73 @@ However, a root filesystem still needs to be provided. There are two main choice
 \section{Applications}
 \label{sec:apps}
 % Mark
-% \lipsum[1-3]
+Our intention in developing FLASH was to produce a device that would ultimately find adoption in heterogeneous computing platforms (like the Apple \"A Series\"), where specialized function cores are used to accelerate the function of a CPU. We also believe that our device can be relevant as an accelerator unit in modern monolithic CPUs.
+
 \subsection{MMU-like Device}
-The Memory Management Unit is a fundamental part of all processors running
+\label{subsec:mmu}
+The Memory Management Unit is a fundamental part of all processors with large amounts of RAM. Its task is to keep accesses to virtual memory fast and correct, and to alleviate many of the memory performance issues associated with multi-tasking operating systems and large address spaces. Without the MMU, the virtual memory abstraction provided by operating systems would result in multiple access for every single memory access a program makes. The TLB is the core of the MMU and its task is to cache a fixed number of virtual memory translations. The size of the cache depends on the hardware, but for the Cortex A9, it contains up to 4 by 32 entries, resulting in at least 8192 bits of storage, assuming 32 bit addresses \cite{arm_mmu}.
+
+The information for the total number of gates an MMU requires in a given CPU architecture is not very forthcoming, but the factor that normally dominates a design size is the memory usage. Our design by comparison uses 8.5 kb of storage, which is directly comparable to the memory usage of the Cortex A9 MMU.
 
 \subsection{Obstacles to Adoption}
+The main reason why the MMU is present on any desktop operating system processor is that its performance boost is crucial to keeping these devices running fast, as explained in \ref{subsec:mmu}. There are two improvements FLASH could potentially bring, and need to be proven in order for any sort of adoption to take place, one feature that must be further researched, which we talk about in \ref{subsec:flash_size}, and a final aspect which must be addressed.
 
+\subsubsection{Performance}
+The first improvement is performance improvements; as the MMU makes memory access fast, FLASH must also demonstratebly make scheduling fast. The acceptable level of \"fast\" likely depends on the target workload. Perhaps it is fine if FLASH is not much faster so long as it provides significant energy efficiency over computing in software. Naturally, slower CPUs will take longer to make a scheduling decision, but FLASH is plenty on a 50 MHz clock, with 50,000 cycles to make a scheduling decision at a 1 kHz clock speed. Thus, FLASH is less sensitive to processor speed than processors are in the context of making scheduling decisions. For this reason, we believe that low power systems would be ideal candidates for FLASH adoption.
+
+\subsubsection{Energy Savings}
+Some low power systems (like smartphones) are as complex, if not more so, than laptops and desktops. In the case of smartphones, many of them contain dedicated Intellectual Property cores (IP) that performs certain tasks, like network management, video acceleration, usb communication, etc. These IP cores typically free up the CPU from performing a processing intensive task that it either cannot perform (WiFi communication) or would be tedious (SPI communication). We believe that FLASH can benefit such a system. FLASH would free up the CPU on smartphones to service the interrupts it constantly receives instead of repeating the mundane task of scheduling the many background tasks that run on thse devices.
+
+\subsubsection{Infinite Tasks}
+Since FLASH is a hardware construct, it has a finite amount of memory. Thus, it can only support a maximum number of tasks. Since threads are also schedulable entities, this maximum number can be reached relatively easily on a desktop Linux environment. Thus, it will be necessary for FLASH to maintain structures in main memory in order to support an unbounded number of tasks. The semantics of this management might consist of evicting tasks that are unlikely to run anytime soon because they have already run for too long.
 
 \section{Engineering Experiences}
 \label{sec:eng_exp}
 % both
+The road to Ubuntu Linaro on the SoCKiT with a communicable FLASH device was fraught with many hardships. We discuss the work done leading up to this development.
 % \lipsum[1-3]
 \subsection{DE2}
+Our initial testing environment was the Terasic DE2, an FPGA development board powered by Altera's Cyclone II. It differs greatly from the Cyclone V in that it does not come with a hard processor system; instead one instantiates a NIOS II processor using Altera's tools. The problem was that the combination of the DE2 and the NIOS II processor was prohibitive to building custom kernels.
+
+There were two main problems: booting a custom kernel and developing a NIOS II system.Our first attempt at running Linux on the DE2 was successful using precompiled images, but we would need to modify the kernel and system to add FLASH. Rather than modifying both at the same time, it would be more prudent to modify one at a time and verify that the system still functions. Attempts to build a custom kernel were successful, but booting the kernel was a separate matter. There were simply too many configuration items to inspect, and the documentation and tutorial for doing so all relies on repositories that are no longer in service.
+
+In trying to synthesize a NIOS II system, one immediate issue was that all resources but one relied on the SOPC Builder, which is the precursor to Qsys. As none of the authors had experience with SOPC Builder, we used the Qsys approach, but were stalled by yet another file to be retrieved from a decommissioned repository. Attempts to regenerate the file and substitute it in the relevant commands yielded results that were not workable. Ultimately, the age of the DE2 was prohibitive to using it as our testbed, and thus we transitioned to the more modern Cyclone V, towards the end of our research.
+
 \subsection{Buildroot}
+Buildroot, as briefly discussed in \ref{subsubsec:linaro}, is a root filesystem for an embedded device. Building and installing buildroot was relatively straightforward. However, when it came to developing software on the device itself to speed up testing, Buildroot offers little options. In addition to lacking Xorg, it also had some routing issues that were prohibitive to getting the package manager to work. Additionally, the package manager did not seem to operate correctly as attempts to use any functions other than its help were met with blank output and a zero exit status. While it was simpler to build than Linaro, it was simply not functional and not representative of a true desktop Linux distribution.
+
+\subsection{Acts of God}
+One of this paper's authors experienced a few severe technical difficulties over the course of research. The largest incidents occured in mid March and early April, essentially costing this author three weeks of productivity. The incident in mid March was the malfunction of this author's last functioning laptop, at which point the author decided it would be prudent to correct his other malfunctioning laptops so that a similar situation would not arise in the future. The incident in early April was the theft of all of the authors laptops, which were recently made functional. The author has learned the anti-theft software is good insurance, and the author has also learned that it is important to synchronize one's work environment across all of one's available development machines.
+
+\subsection{CtoS}
 
 \section{Future Work}
 \label{sec:future}
+While the framework of the FLASH scheduler is complete, it still needs to be tested and evaluated. Due to time constraints, we were not able to reach the evaluation phase. There are also two features that could potential improve the performance of FLASH that are not present in the current implementation.
+
 \subsection{DMA}
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=0.9\linewidth]{fig/dma.jpg}
+		\caption{
+			A block diagram of the function of DMA access, and how it frees up the processor from becoming involved in data transfers \protect\cite{fig:dma}.
+		}
+		\label{fig:dma_diag}
+	\end{center}
+\end{figure}
+In Direct Memory Access (DMA), a controller handles the task of maintaining memory coherency with the processor while it is executing, as shown in \ref{fig:dma_diag}. This overhead is justified because the processor can continue executing while the controller interfaces with the device to read/store data. The advantage of DMA in the context of FLASH is that instead of performing an ioread/iowrite everytime a scheduler event occurs, the processor and device can use the DMA as a liason and access the data when they are ready.
+
+This does not negate the necessity of retrieving a new process immediately if the current process calls \verb|sched_yield|, for example, but it reduces the number of ioreads/iowrites when there are plenty of processes in the running state.
+
 \subsection{No HZ Interrupt}
+Desktop Linux kernels use a timer to manage rescheduling needs. The speed of the timer directly corresponds to the interactivity of the kernel, with 1000 Hz yielding the most interactive kernel configuration supported, but with necessarily the poorest throughput. In transitioning to DMA, we can decide whether or not to raise interrupts after FLASH has made a scheduling decision. If our decision is the same as the currently running process, then there's no reason to raise an interrupt. This is another source of a potential performance improvement on tasks like a full kernel build, for example, where there are likely to be few other runnable tasks in the system.
+
+\subsection{FLASH Size}
+\label{subsec:flash_size}
+In order to tackle the question of how does FLASH stack up to other embedded CPU accelerators (MMU, memory controller) of similar functionality, we also need to know the size (area and gate usage) of these components, as well as FLASH when synthesized for a specific technology node. Unfortunately, the information of these sizes is not made publically available, and would likely require us to get in contact with engineers at various Intel, AMD, or ARM.
+
+\subsection{SMP Support}
+The current implementation of FLASH has no knowledge of multiple processors. This is problematic bacause only one task can be running at a time from the point of view of FLASH. However, enabling SMP support in FLASH is not as simple as informing FLASH of the number of CPUs in a register, the hardware also needs to be able to make scheduling decisions for each of the processors efficiently. Naturally, this increases the logic usage for the scheduling kernel, but ideally the number of tasks supported in memory need not be increased, thus keeping the memory usage, and potentially area usage, still low and competitive with other CPU units.
 
 \section{Conclusion}
 \label{sec:conclusion}
