@@ -25,8 +25,9 @@ As accelerators become more common and necessary as a way to continue Moore's La
 
 \end{abstract}
 
+
 \section{Introduction}
-% \lipsum[1]
+\label{sec:intro}
 Traditional desktop operating systems are interactive, meaning that they serve as the primary interface between a user and a machine. Traditional server operating systems are batch-job oriented, meaning that processes are not pre-empted: a process continues until it exits or is forced to exit due to error. This preemption is one of the performance factors that contribute to greater process utilization on server operating systems as opposed to desktop operating systems. The reason why preemption is detrimental to CPU utilization is a combination of a few different reasons.
 
 \paragraph{TLB and Cache}
@@ -37,6 +38,7 @@ These structures work very well so long as the same process is in memory. When a
 It is also difficult to make real time scheduling guarantees. In applications such as video playback, it is necessary that the playback process be scheduled consistently to ensure jitter-free playback. FLASH is able to make these guarantees due to its asynchronous computation and throughput. Additionally, FLASH minimizes the penalty to cache and TLB invalidation due to scheduler activity, while providing a complete scheduling interface.
 
 \section{Scheduling in the Kernel}
+\label{sec:sched_in_kernel}
 % Mark
 Modern desktop operating systems have to run hundreds of tasks, while providing a responsive interface to the user. This means that the CPU must be able to serve many interrupts a second, from various hardware devices, and service dozens or hundreds of background tasks while presenting a lagless experience to the end user. Each of these sources introduce potential sources of latency: interrupt handling \cite{regehr2007safe} requires many techniques in both hardware and software implementations to maintain relatively cheap and efficient scheduler design is an ongoing field of research \cite{wong2008cfs} \cite{park2008hardware} \cite{morton2004hardware}. We chose to focus on scheduling for our research as the potential benefits of scheduling in hardware in an operating system are not explored in the context of a desktop workload.
 
@@ -51,15 +53,49 @@ The CFS scheduler is conceptual simple; it aims to implement an ideal multi-task
 
 
 \section{Related Works}
-\lipsum[1-2]
+\label{sec:related_works}
+Previous hardware scheduling units focus completely on embedded systems with
+a fixed number of tasks each with fixed priority
+\cite{kuacharoen2003configurable, morton2004hardware, nacul2007hardware, nakano1995hardware,
+park2008hardware}.  Scheduling under these fairly restrictive constraints is
+greatly simplified with respect to desktop scheduling as there is a much
+more defined ordering between tasks.
+
+Additionally, there is often a small number of tasks relative to a desktop
+environment.  This means that much simpler algorithms may be used in an
+attempt to approximate the optimal task ordering.
+
+The major novel challenge in escalating to a desktop Linux is handling the
+dynamic, unbounded (from a realistic hardware perspective) number of tasks.
+The initial FLASH prototype addresses this in an unsatisfying way: by
+arbitrarily fixing the number of tasks that can be managed with its
+scheduling policy.  As discussed in detail in Section~\ref{sec:future},
+future iterations will remove this restriction by reserving a small section
+of memory.
+
+Because we aim to support an unbounded number of tasks, we must implement
+a scheduler comparable to the default CFS currently used by the kernel.
+While a simpler implementation than the kernel default, the FLASH scheduler
+is implemented in accordance with the major principle of CFS
+\cite{wong2008cfs}.
+
+We should also consider the architecture of previous hardware schedulers.
+Many of the previously cited works were designed either as ASICs
+(Application Specific Integrated Circuits) or on FPGAs (Field Programmable
+Gate Arrays) rather than a general purpose CPUs.  This makes scheduling of
+resource usage slightly different in that there is not always an overhead of
+a context switch: we may simply be deciding which process can use
+a particular multiplier.
 
 
 \section{FLASH Architecture}
+\label{sec:arch}
 % Chae
 \lipsum[1-8]
 
 
 \section{Integration}
+\label{sec:integration}
 % intro stuff here
 \subsection{Cyclone V}
 % Mark
@@ -81,11 +117,13 @@ The CFS scheduler is conceptual simple; it aims to implement an ideal multi-task
 
 
 \section{Applications}
+\label{sec:apps}
 % Mark
 \lipsum[1-3]
 
 
 \section{Engineering Experiences}
+\label{sec:eng_exp}
 % both
 \lipsum[1-3]
 
@@ -94,6 +132,7 @@ The CFS scheduler is conceptual simple; it aims to implement an ideal multi-task
 \subsection{No HZ Interrupt}
 
 \section{Conclusion}
+\label{sec:conclusion}
 \lipsum[1]
 
 \nocite{*}
