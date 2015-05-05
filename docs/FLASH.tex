@@ -395,7 +395,7 @@ The Cyclone V family of Field Programmable Gate Arrays (FPGA) also include Syste
 \subsubsection{Quartus}
 The first step in realizing our design is synthesizing the design using Altera Quartus II. Quartus is Altera's IDE for designing and verifying RTL descriptions targeted at their FPGAs. Once the design is compiled to RTL using CtoS, it is then configured in Quartus using Qsys, which is a system integration tool also developed by Altera that facilitates the task of connection complex modules to complex systems. In order to communicate with the HPS, hardware modules are connected to the Avalon MM bus which is implemented on top of ARM's AMBA AXI interface for communication with the ARM processor. Once the design is connected using Qsys, it is synthesized using Quartus, and then a bitstream used to program the FPGA is generated.
 
-\subsubsection{UBoot and Kernel}
+\subsubsection{U-Boot and Kernel}
 \begin{figure}
 	\begin{center}
 		%\includegraphics[width=0.65\textwidth]{fig/flash-diagram.png}
