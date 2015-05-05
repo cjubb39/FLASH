@@ -22,19 +22,62 @@
 \maketitle
 
 \begin{abstract}
-As accelerators become more common and necessary as a way to continue Moore's Law in the absence of Dennard Scaling, researchers explore segments of computation that can be improved with the aid of dedicated hardware. This paper presents FLASH, a hardware scheduler to take over the task of scheduling from the operating system. FLASH differs from previous hardware schedulers by implementing a time sharing algorithm, as opposed to a deadline based or real-time scheduling algorithm. The scheduling decisions it makes are equivalent to those made in common desktop operating schedulers, but in much reduced time and without negatively impacting processor performance features. FLASH is designed to keep kernel modifications minimal, only requiring change when the kernel scheduling interface changes. We discuss the implementation status of FLASH, future work that remains to be done, and its relevance in different computing platforms.
+As accelerators become more common and necessary as a way to continue
+Moore's Law in the absence of Dennard Scaling, researchers explore segments
+of computation that can be improved with the aid of dedicated hardware. This
+paper presents FLASH, a hardware scheduler, to take over the task of
+scheduling from the operating system. FLASH differs from previous hardware
+schedulers by implementing a time sharing algorithm, as opposed to
+a deadline based or real-time scheduling algorithm. The scheduling decisions
+it makes are equivalent to those made in common desktop operating
+schedulers, but in much reduced time and without negatively impacting
+processor performance features. FLASH is designed to keep kernel
+modifications minimal, only requiring change when the kernel scheduling
+interface changes. We discuss the implementation status of FLASH, future
+work that remains to be done, and its relevance in different computing
+platforms.
 
 \end{abstract}
 
 
 \section{Introduction}
 \label{sec:intro}
-Desktop operating systems are interactive, meaning that they present a responsive and fluid experience to users. To acheive this balance of performance and responsiveness, desktop operating systems are called preemptable, meaning that the execution of processes can be interrupted by another process. By contrast, server operating systems are batch oriented, meaning that processes are not preempted: a process continues until it exits or is forced to exit, at which point another process starts computation. This preemption is one of the performance factors that contribute to greater CPU utilization on server operating systems as opposed to desktop operating systems. The reason why preemption is detrimental to CPU utilization is a combination of a few different reasons.
+Desktop operating systems are interactive, meaning that they must present
+a responsive and fluid experience to users. To achieve this balance of
+performance and responsiveness, desktop operating systems are called
+preemptable, meaning that the execution of processes can be interrupted by
+another process. By contrast, server operating systems are batch oriented,
+meaning that processes are not preempted: a process continues until it exits
+or is forced to exit, at which point another process starts computation.
+This preemption is one of the performance factors that contribute to greater
+CPU utilization on server operating systems as opposed to desktop operating
+systems. The reason why preemption is detrimental to CPU utilization is
+a combination of a few different reasons.
 
 \subsection{TLB and Cache}
-The translation lookaside buffer (TLB) is a hardware structure that assists the memory management unit (MMU) of the CPU in translating virtual addresses into physical addresses. The TLB serves as a cache to look up commonly used virtual addresses and return the corresponding physical address. In computationally expensive portions of code, this unit is advantageous as it prevents unnecessary page lookups when the code is accessing small regions of memory. Likewise, the cache on a CPU provides good speedups to these kinds of programs by containing the actual data referenced in these virtual memory locations.
+The translation lookaside buffer (TLB) is a hardware structure that assists
+the memory management unit (MMU) of the CPU in translating virtual addresses
+into physical addresses. The TLB serves as a cache to look up commonly used
+virtual addresses and return the corresponding physical address. In
+computationally expensive portions of code, this unit is advantageous as it
+prevents unnecessary page lookups when the code is accessing small regions
+of memory. Likewise, the cache on a CPU provides good speedups to these
+kinds of programs by holding the actual data referenced in these virtual
+memory locations.
 
-These structures have been shown to work very well, despite their small sizes. However whenever another task takes residence in the processor, the cache and TLB are likely invalidated, thus leading to a period of degraded performance. A context switch is the process wherein the operating system saves the state of the currently executing task and schedules in a new task to execute. In order to make a decision on which task is selected next, a scheduler is invoked. Depending on the needs of the particular operatin system, this scheduler can be a simple queue or a complex multi-queue priority based scheduler. If the scheduler is sufficiently complex, even if it chooses the same task to resume running, it may already invalidate the cache and TLB of the processor. The new resident process must now wait for expensive memory accesses to bring in valid TLB entries and cache values. This results in less than ideal processor utilization.
+These structures have been shown to work very well, despite their small
+sizes. However whenever another task takes residence in the processor, the
+cache and TLB are likely invalidated, thus leading to a period of degraded
+performance. A context switch is the process wherein the operating system
+saves the state of the currently executing task and schedules in a new task
+to execute. In order to make a decision on which task is selected next,
+a scheduler is invoked. Depending on the needs of the particular operating
+system, this scheduler can be a simple queue or a complex multi-queue
+priority based scheduler. If the scheduler is sufficiently complex, even if
+it chooses the same task to resume running, it may already invalidate the
+cache and TLB of the processor. The new resident process must now wait for
+expensive memory accesses to bring in valid TLB entries and cache values.
+This results in less than ideal processor utilization.
 
 It is also difficult to make real time scheduling guarantees. In applications such as video or audio playback, it is necessary that the playback process be scheduled consistently to ensure jitter-free playback \cite{groves2009bfs}. Schedulers typically run periodically in an operating system to ensure interactivity. If they run too infrequently, a video processing task may not obtain enough cycles to produce a consistent amount of frames. If they run too frequently, then they consume too many system resources and negatively impact scheduling. FLASH is able to solve this conflicting requirement. Since it is a dedicated hardware unit, FLASH does not consume any CPU resources. Additionally, since its decision making is time bounded, it can make real-time scheduling guarantees.
 
@@ -75,7 +118,9 @@ Overall, just 1.99\% of CPU time was devoted to the CFS scheduler. While this ma
 	3.25\ \text{GHz}*0.0199*8 = 508.7\ \text{MHz}
 \end{equation*}
 
-508.7 million cycles are wasted each second. FLASH is intended to return most of those cycles back to the CPU to perform useful work.
+We see that $508.7$ million cycles are wasted each second. FLASH is intended
+to return many, if not most, of those cycles back to the CPU to perform
+useful work.
 
 \section{Scheduling in the Kernel}
 \label{sec:sched_in_kernel}
@@ -734,7 +779,15 @@ The current implementation of FLASH has no knowledge of multiple processors. Thi
 \section{Conclusion}
 \label{sec:conclusion}
 % \lipsum[1]
-In this paper, we present FLASH, a hardware scheduler accelerator designed to replace an operating system scheduler. FLASH performs scheduling decisions in hardware, thus freeing up the CPU to focus on useful work. FLASH implements a time-sharing algorithm, which allows for good interactivity on desktop workloads. Future work for FLASH involves using DMA to further free up CPU time in combination with interrupts, to reduce the number of unnecessary scheduler interrupts. Additional future work involves demonstrating the viability of FLASH in various devices like smartphones and integration with CPUs.
+In this paper, we present FLASH, a hardware scheduler accelerator designed
+to replace an operating system scheduler. FLASH performs scheduling
+decisions in hardware, thus freeing up the CPU to focus on useful work.
+FLASH implements a time-sharing algorithm, which allows for good
+interactivity on desktop workloads. Future work for FLASH involves using DMA
+to further free up CPU time in combination with interrupts, to reduce the
+number of unnecessary scheduler interrupts. Additional future work involves
+demonstrating the viability of FLASH in various devices like smartphones as
+well as direct, tight integration with CPUs.
 
 \nocite{*}
 {
