@@ -41,7 +41,9 @@ It is also difficult to make real time scheduling guarantees. In applications su
 \subsection{Raw Throughput}
 In our research, we focus on scheduling in the Linux kernel. In order to determine the limits of the improvements that FLASH can bring, we performed benchmarking based on the CFS scheduler, which we talk more about in Section \ref{sec:sched_in_kernel}. In order to determine the overhead incurred due to the CFS scheduler, we ran the \verb|hackbench| scheduler stress test \cite{hackbench}. \verb|hackbench| operates by launching a large number of threads or processes and passing data between them. In order to measure the amount of CPU time spent in the scheduler subsystem, \verb|oprofile| was used to profile the entire Linux kernel \cite{oprofile}.
 
-Our testing environment consisted of an Intel\textsuperscript{\textregistered} Core\textsuperscript{TM} i7-4810MQ processor, operating at 3.25 GHz. We ran \verb|operf| with the \verb|-k| and \verb|--system-wide| options, before launching \verb|hackbench| with the \verb|-l 100000| option, to ensure that the benchmark ran for a sufficiently long amount of time. The process of starting \verb|operf| and \verb|hackbench| was repeated three times to reduce variability, and the average of the three runs was taken. To obtain the results, \verb|opreport| was run with the following options: \verb|--merge all| \verb|--symbols| \verb|--image-path| \verb|-l| \verb|-e sync_buffer,add_event_entry,dd_sample_entry|. Finally, we filtered out irrelevant results by searching for entries with fair in their name, and identified the class scheduler functions, as shown in Table \ref{tab:cfs_usage}.
+Our testing environment consisted of an Intel \textsuperscript{\textregistered} Core \textsuperscript{TM} i7-4810MQ processor, operating at 3.25 GHz. We ran \verb|operf| with the \verb|-k| and \verb|--system-wide| options, before launching \verb|hackbench| with the \verb|-l 100000| option, to ensure that the benchmark ran for a sufficiently long amount of time. The process of starting \verb|operf| and \verb|hackbench| was repeated three times to reduce variability, and the average of the three runs was taken. To obtain the results, \verb|opreport| was run with the following options: \verb|--merge all| \verb|--symbols| \verb|--image-path| \verb|-l| \verb|-e| \verb|sync_buffer,|\verb|add_event_entry,|\verb|dd_sample_entry|.
+
+Finally, we filtered out irrelevant results by searching for entries with fair in their name, and identified the class scheduler functions, as shown in Table \ref{tab:cfs_usage}.
 
 \begin{table}[h]
 \begin{center}
@@ -70,7 +72,7 @@ Overall, just 1.06\% of CPU time was devoted to the CFS scheduler. While this ma
 	3.25\ \text{GHz}*0.0106*8 = 276.8\ \text{MHz}
 \end{equation*}
 
-276.8 million cycles wasted each second. FLASH is intended to return most of those cycles back to the CPU to perform useful work.
+276.8 million cycles are wasted each second. FLASH is intended to return most of those cycles back to the CPU to perform useful work.
 
 \section{Scheduling in the Kernel}
 \label{sec:sched_in_kernel}
