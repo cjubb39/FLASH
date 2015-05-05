@@ -29,12 +29,12 @@ paper presents FLASH, a hardware scheduler, to take over the task of
 scheduling from the operating system. FLASH differs from previous hardware
 schedulers by implementing a time sharing algorithm, as opposed to
 a deadline based or real-time scheduling algorithm. The scheduling decisions
-it makes are equivalent to those made in common desktop operating
+it makes are equivalent to those made in common desktop operating system
 schedulers, but in much reduced time and without negatively impacting
 processor performance features. FLASH is designed to keep kernel
 modifications minimal, only requiring change when the kernel scheduling
-interface changes. We discuss the implementation status of FLASH, future
-work that remains to be done, and its relevance in different computing
+interface changes. We discuss the implementation status of FLASH,
+work that remains to be done and future work, and its relevance in different computing
 platforms.
 
 \end{abstract}
@@ -42,7 +42,7 @@ platforms.
 
 \section{Introduction}
 \label{sec:intro}
-Desktop operating systems are interactive, meaning that they must present
+Desktop operating systems are interactive, meaning that they present
 a responsive and fluid experience to users. To achieve this balance of
 performance and responsiveness, desktop operating systems are called
 preemptable, meaning that the execution of processes can be interrupted by
@@ -146,17 +146,6 @@ The $ O(1) $ was effective at its job, but was not a fair scheduler; was difficu
 	\end{center}
 \end{figure}
 
-\begin{figure}
-	\begin{center}
-		%\includegraphics[width=0.65\textwidth]{fig/flash-diagram.png}
-		\includegraphics[width=0.9\linewidth]{fig/rbtree.png}
-		\caption{
-			A sample red black tree taken fron \protect\cite{wiki:rbtree}. The choice of color is arbitrary, and the distinction is used to maintain the balancing property of the tree.
-		}
-		\label{fig:rbtree}
-	\end{center}
-\end{figure}
-
 The CFS scheduler is conceptually simple; it aims to implement an ideal
 multi-tasking CPU \cite{cfsdesign}. An ideal mutli-tasking CPU assigns equal
 time to all processes assigned to it, essentially a restatement of
@@ -173,6 +162,17 @@ next. This allows CFS to emulate a round-robin scheduler while offering
 greater granularity. Additionally, CFS is conceptually simpler and has
 a much smaller code footprint---better for embedded environments, than the
 $ O(1) $ scheduler.
+
+\begin{figure}
+	\begin{center}
+		%\includegraphics[width=0.65\textwidth]{fig/flash-diagram.png}
+		\includegraphics[width=0.9\linewidth]{fig/rbtree.png}
+		\caption{
+			A sample red black tree taken fron \protect\cite{wiki:rbtree}. The choice of color is arbitrary, and the distinction is used to maintain the balancing property of the tree.
+		}
+		\label{fig:rbtree}
+	\end{center}
+\end{figure}
 
 \subsubsection{Limitations}
 CFS operates at $ O\left(\log n\right) $ efficiency (inserting
@@ -306,7 +306,7 @@ hardware unit.
 
 We cannot completely offload the data about processes to hardware, most
 obviously because of the size of objects like the \ttt{task\_struct}.
-Additionally, those objects are heavily used by modules other than the
+Additionally, those objects are heavily accessed by modules other than the
 scheduler.  We must, though, retain some structure in FLASH memory so that
 it may make scheduling decisions comparable to that of CFS.
 
@@ -319,8 +319,7 @@ In addition to the process control interface, FLASH provides a scheduling
 control interface, responsible for providing the software with tasks to be
 run.  We can further subdivide this interface into two subparts: scheduling
 requests and timer ticks.  Making replacement of software more
-straightforward, these subparts directly correspond to the two main modes of
-tasks switching in the Linux Kernel.
+straightforward, these subparts directly correspond to the two main mechanisms by which tasks switch in the Linux Kernel.
 
 \paragraph{Scheduling Requests}
 Often a running process will want to do something (such as disk I/O) that
@@ -334,7 +333,7 @@ At this point, using methods explained in Section~\ref{sec:FLASH_impl}, the
 next task to be run is selected and returned to the software.
 
 \paragraph{Timer Tick}
-FLASH also provides functionality to raise an interrupt via a timer tick.
+FLASH also provides functionality to raise an interrupts as a way of implementing timer ticks.
 For simplicity and fully encapsulating scheduling logic, we export the
 generation of the timer tick to this hardware unit.  At a specified time
 interval, FLASH will raise a timer interrupt and provide the software with
@@ -342,9 +341,9 @@ the next task to be run.
 
 \subsection{FLASH Implementation}
 \label{sec:FLASH_impl}
-FLASH implements a CFS scheduling algorithm, allowing transparent
+FLASH implements a simplified version of the CFS scheduling algorithm, allowing transparent
 replacement of the current software implementation.  Internally, we have two
-front-end modules, each corresponding to a segment of the interface (process
+front-end ports, each corresponding to a segment of the interface (process
 control and scheduling control). Those front-end modules connect to back-end
 modules which regulate and control access to the backing internal data
 structures.  We see this internal implementation architecture described in
@@ -396,7 +395,7 @@ a weighted accounting of the actual runtime based on priority of the
 process.  Scheduling decisions are made based on the virtual runtime, as in
 CFS.  FLASH additionally stores other minor fields for bookkeeping purposes.
 
-\paragraph{On Red-Black trees}
+\paragraph{On Red-Black Trees}
 While using a red-black tree would allow the implementation to be
 asymptotically faster, actual runtime in software will likely be higher than
 iterating through a simple queue implemented in hardware.  Firstly, hardware
@@ -409,18 +408,18 @@ performance. Switching to a self-contained hardware module will not have any
 cache considerations because that hardware unit will have a single
 monolithic memory.
 
-\paragraph{What do we store?}
+\paragraph{What We Store}
 In addition to storing the PID, priority, and state, we also have a few
-fields used to store internal state necessary to keep the CFS implementation
+fields used to store the internal state necessary to keep our CFS implementation
 completely fair.  These fields most importantly include a notion of virtual
-runtime.  Other fields are for bookkeeping reasons.
+runtime.  Other fields are for bookkeeping.
 
 \subsection{Summary}
 Together the interface and implementation of FLASH provide an easily
 integrable scheduling module.  The kernel will interface with the hardware
 unit in the same way that the software scheduler does.  Additionally, FLASH
 implements the fundamental algorithm of the current default Linux scheduler
-CFS, relying upon the notion of a priority-weighted virtual runtime.
+CFS, which schedules based on priority-weighted virtual runtimes.
 
 
 \section{Integration}
@@ -555,7 +554,7 @@ Implementation of this policy is done using the usual scheduling interface
 provided by the Linux kernel.  We construct a \texttt{struct sched\_class}
 and the implementation of the relevant core scheduling functions such as
 \texttt{enqueue\_task}, \texttt{dequeue\_task}.  We implement the provided
-interface in a way that is a thing wrapper around calls to device driver
+interface in a way that is a thin wrapper around calls to device driver
 functions.  This is because the algorithmic work is done in the device, so
 we need only relay decisions made by the device to the core scheduler.
 
