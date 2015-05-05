@@ -22,18 +22,19 @@
 \maketitle
 
 \begin{abstract}
-As accelerators become more common and necessary as a way to continue Moore's
-Law in the absence of Dennard Scaling, researchers explore segments of
-computation that can be improved with the aid of dedicated hardware. This paper
-presents FLASH, a hardware scheduler to take over the task of scheduling from
-the operating system. FLASH differs from previous hardware schedulers by
-implementing a time sharing algorithm, as opposed to a deadline based or real-
-time scheduling algorithm. The scheduling decisions it makes are equivalent to
-those made in common desktop operating schedulers, but in much reduced time and
-without negatively impacting processor performance features. FLASH is designed
-to keep kernel modifications minimal, only requiring change when the kernel
-scheduling interface changes. We discuss the implementation status of FLASH,
-future work that remains to be done, and its relevance in different computing
+As accelerators become more common and necessary as a way to continue
+Moore's Law in the absence of Dennard Scaling, researchers explore segments
+of computation that can be improved with the aid of dedicated hardware. This
+paper presents FLASH, a hardware scheduler, to take over the task of
+scheduling from the operating system. FLASH differs from previous hardware
+schedulers by implementing a time sharing algorithm, as opposed to
+a deadline based or real-time scheduling algorithm. The scheduling decisions
+it makes are equivalent to those made in common desktop operating
+schedulers, but in much reduced time and without negatively impacting
+processor performance features. FLASH is designed to keep kernel
+modifications minimal, only requiring change when the kernel scheduling
+interface changes. We discuss the implementation status of FLASH, future
+work that remains to be done, and its relevance in different computing
 platforms.
 
 \end{abstract}
@@ -41,12 +42,42 @@ platforms.
 
 \section{Introduction}
 \label{sec:intro}
-Desktop operating systems are interactive, meaning that they present a responsive and fluid experience to users. To acheive this balance of performance and responsiveness, desktop operating systems are called preemptable, meaning that the execution of processes can be interrupted by another process. By contrast, server operating systems are batch oriented, meaning that processes are not preempted: a process continues until it exits or is forced to exit, at which point another process starts computation. This preemption is one of the performance factors that contribute to greater CPU utilization on server operating systems as opposed to desktop operating systems. The reason why preemption is detrimental to CPU utilization is a combination of a few different reasons.
+Desktop operating systems are interactive, meaning that they must present
+a responsive and fluid experience to users. To achieve this balance of
+performance and responsiveness, desktop operating systems are called
+preemptable, meaning that the execution of processes can be interrupted by
+another process. By contrast, server operating systems are batch oriented,
+meaning that processes are not preempted: a process continues until it exits
+or is forced to exit, at which point another process starts computation.
+This preemption is one of the performance factors that contribute to greater
+CPU utilization on server operating systems as opposed to desktop operating
+systems. The reason why preemption is detrimental to CPU utilization is
+a combination of a few different reasons.
 
 \subsection{TLB and Cache}
-The translation lookaside buffer (TLB) is a hardware structure that assists the memory management unit (MMU) of the CPU in translating virtual addresses into physical addresses. The TLB serves as a cache to look up commonly used virtual addresses and return the corresponding physical address. In computationally expensive portions of code, this unit is advantageous as it prevents unnecessary page lookups when the code is accessing small regions of memory. Likewise, the cache on a CPU provides good speedups to these kinds of programs by containing the actual data referenced in these virtual memory locations.
+The translation lookaside buffer (TLB) is a hardware structure that assists
+the memory management unit (MMU) of the CPU in translating virtual addresses
+into physical addresses. The TLB serves as a cache to look up commonly used
+virtual addresses and return the corresponding physical address. In
+computationally expensive portions of code, this unit is advantageous as it
+prevents unnecessary page lookups when the code is accessing small regions
+of memory. Likewise, the cache on a CPU provides good speedups to these
+kinds of programs by holding the actual data referenced in these virtual
+memory locations.
 
-These structures have been shown to work very well, despite their small sizes. However whenever another task takes residence in the processor, the cache and TLB are likely invalidated, thus leading to a period of degraded performance. A context switch is the process wherein the operating system saves the state of the currently executing task and schedules in a new task to execute. In order to make a decision on which task is selected next, a scheduler is invoked. Depending on the needs of the particular operatin system, this scheduler can be a simple queue or a complex multi-queue priority based scheduler. If the scheduler is sufficiently complex, even if it chooses the same task to resume running, it may already invalidate the cache and TLB of the processor. The new resident process must now wait for expensive memory accesses to bring in valid TLB entries and cache values. This results in less than ideal processor utilization.
+These structures have been shown to work very well, despite their small
+sizes. However whenever another task takes residence in the processor, the
+cache and TLB are likely invalidated, thus leading to a period of degraded
+performance. A context switch is the process wherein the operating system
+saves the state of the currently executing task and schedules in a new task
+to execute. In order to make a decision on which task is selected next,
+a scheduler is invoked. Depending on the needs of the particular operating
+system, this scheduler can be a simple queue or a complex multi-queue
+priority based scheduler. If the scheduler is sufficiently complex, even if
+it chooses the same task to resume running, it may already invalidate the
+cache and TLB of the processor. The new resident process must now wait for
+expensive memory accesses to bring in valid TLB entries and cache values.
+This results in less than ideal processor utilization.
 
 It is also difficult to make real time scheduling guarantees. In applications such as video or audio playback, it is necessary that the playback process be scheduled consistently to ensure jitter-free playback \cite{groves2009bfs}. Schedulers typically run periodically in an operating system to ensure interactivity. If they run too infrequently, a video processing task may not obtain enough cycles to produce a consistent amount of frames. If they run too frequently, then they consume too many system resources and negatively impact scheduling. FLASH is able to solve this conflicting requirement. Since it is a dedicated hardware unit, FLASH does not consume any CPU resources. Additionally, since its decision making is time bounded, it can make real-time scheduling guarantees.
 
@@ -87,17 +118,20 @@ Overall, just 1.99\% of CPU time was devoted to the CFS scheduler. While this ma
 	3.25\ \text{GHz}*0.0199*8 = 508.7\ \text{MHz}
 \end{equation*}
 
-508.7 million cycles are wasted each second. FLASH is intended to return most of those cycles back to the CPU to perform useful work.
+We see that $508.7$ million cycles are wasted each second. FLASH is intended
+to return many, if not most, of those cycles back to the CPU to perform
+useful work.
 
 \section{Scheduling in the Kernel}
 \label{sec:sched_in_kernel}
 % Mark
-Modern desktop operating systems have to run hundreds of tasks, while providing a responsive interface to the user. This means that the CPU must be able to serve many interrupts a second, from various hardware devices, and service dozens or hundreds of background tasks while presenting a lagless experience to the end user. Each of these sources introduce potential sources of latency: interrupt handling \cite{regehr2007safe} requires many techniques in both hardware and software implementations to maintain relatively cheap and efficient scheduler design is an ongoing field of research \cite{wong2008cfs} \cite{park2008hardware} \cite{morton2004hardware}. We chose to focus on scheduling for our research as the potential benefits of scheduling in hardware in an operating system are not explored in the context of a desktop workload.
+Modern desktop operating systems have to run hundreds of tasks, while providing a responsive interface to the user. This means that the CPU must be able to serve many interrupts a second from various hardware devices and service dozens or even hundreds of background tasks while presenting a lagless experience to the end user. Each of these sources introduce potential sources of latency: interrupt handling \cite{regehr2007safe} requires many techniques in both hardware and software implementations to maintain relatively cheap; and, efficient scheduler design is an ongoing field of research \cite{wong2008cfs, park2008hardware, morton2004hardware}. We chose to focus on scheduling for our research as the potential benefits of scheduling in hardware in an operating system are not explored in the context of a desktop workload.
 
 \subsection{History of Linux Schedulers}
-The linux scheduler has gone through a few major design changes in its scheduler. Before the introduction of the $ O(n) $ scheduler in Linux 2.4, scheduler implementations simple and fast as CPUs themselves had not become as complex as compared to modern CPUs with simultaneous multi-threading (SMT) and symmetric multi-processing (SMP). These implementations were not scalable to multiple processors, so the $ O(n) $ scheduler was introduced to solve the problems introduced by SMP/SMT. The $ O(n) $ scheduler worked well so long as the number of tasks remained low, but as it had a single runqueue for all CPUs in a system, scaled poorly as the number of CPUs grew and as the number of processes grew (since it must iterate through the list of all processes to select a candidate).
+The linux scheduler has gone through some major design changes in its scheduler. Before the introduction of the $ O(n) $ scheduler in Linux 2.4, scheduler implementations as simple and fast as CPUs themselves had not become complex compared to modern CPUs with simultaneous multi-threading (SMT) and symmetric multi-processing (SMP). These implementations were not scalable to multiple processors, so the $ O(n) $ scheduler was introduced to solve these problems. The $ O(n) $ scheduler worked well as long as the number of tasks remained low, but, as it had a single runqueue for all CPUs in a system, scaled poorly as the number of CPUs and processes grew (since it must iterate through the list of all processes to select a candidate).
 
-The $ O(1) $ scheduler was introduced to solve the problem of large number of tasks. As the name implies, it is able to select a task to run in constant time. The $ O(1) $ scheduler achieves this efficiency by exploiting per-priority \textit{active} and \textit{expired} arrays for tasks. Tasks that are eligible to run are placed in the \textit{active} array and once a task has completed running it is placed in the \textit{expired} array. Thus, selecting a task is as fast as dequeuing the head of the highest priority array. Once the \textit{active} array is empty, the \textit{active} and \emph{expired} arrays are swapped by simply changing pointer directions. Unlike the $ O(n) $ processor, it had per-CPU runqueues, meaning task scheduling did not stall other CPUs. The $ O(1) $ was effective at its job, but was not a fair scheduler, was difficult to maintain through major kernel revisions, and its use of heuristics to determine the interactivity of a process was not without flaw. The CFS scheduler was introduced in Linux 2.6 as a replacement to solve the interactivity issues of the $ O(1) $ scheduler and introduce a simpler, but efficient scheduler.
+The $ O(1) $ scheduler was introduced to solve the problem of a large number of tasks. As the name implies, it is able to select a task to run in constant time. The $ O(1) $ scheduler achieves this efficiency by exploiting per-priority \textit{active} and \textit{expired} arrays for tasks. Tasks that are eligible to run are placed in the \textit{active} array and once a task has completed running it is placed in the \textit{expired} array. Thus, selecting a task is as fast as dequeuing the head of the highest priority array. Once the \textit{active} array is empty, the \textit{active} and \emph{expired} arrays are swapped by simply changing pointer directions. Unlike the $ O(n) $ processor, it had per-CPU runqueues, meaning task scheduling did not stall other CPUs.
+The $ O(1) $ was effective at its job, but was not a fair scheduler; was difficult to maintain through major kernel revisions; and used heuristics to determine the interactivity of a process in a flawed way. The CFS scheduler was introduced in Linux 2.6 as a replacement to solve the interactivity issues of the $ O(1) $ scheduler and introduce a simpler yet efficient scheduler.
 
 \subsection{Implementation of CFS}
 
@@ -123,19 +157,39 @@ The $ O(1) $ scheduler was introduced to solve the problem of large number of ta
 	\end{center}
 \end{figure}
 
-The CFS scheduler is conceptually simple; it aims to implement an ideal multi-tasking CPU \cite{cfsdesign}. An ideal mutli-tasking CPU assigns equal time to all processes assigned to it, which is essentially a restatement of round-robin scheduling \ref{fig:cfs_multitask}. As \emph{expired} and \emph{active} arrays are the basis of the $ O(1) $ scheduler, red black trees are the basis of CFS. Red black trees are a type of self balancing binary search tree, and in the case of CFS, are ordered based on the virtual runtime of processes, as defined by the number of nanoseconds in CPU residence. This type of accounting affords CFS greater granularity than the other process schedulers, as it has no notion of a timeslice. Instead, CFS simply chooses the task with the smallest total runtime (with weighting applied for priority) and schedules it to be run next. This allows CFS to emulate a round-robin scheduler while offering greater granularity. Additionally, CFS is conceptually simpler and has a much smaller code footprint, which is better for embedded environments, than the $ O(1) $ scheduler.
+The CFS scheduler is conceptually simple; it aims to implement an ideal
+multi-tasking CPU \cite{cfsdesign}. An ideal mutli-tasking CPU assigns equal
+time to all processes assigned to it, essentially a restatement of
+round-robin scheduling \ref{fig:cfs_multitask}. As \emph{expired} and
+\emph{active} arrays are the basis of the $ O(1) $ scheduler, red black
+trees are the basis of CFS. Red black trees are a type of self balancing
+binary search tree, and, in the case of CFS, ordered based on the virtual
+runtime of processes, as defined by the number of nanoseconds in CPU
+residence (weighted by task priority). This type of accounting affords CFS
+greater granularity than the other process schedulers, as it has no notion
+of a timeslice. Instead, CFS simply chooses the task with the smallest total
+runtime (with the weighting applied for priority) and schedules it to be run
+next. This allows CFS to emulate a round-robin scheduler while offering
+greater granularity. Additionally, CFS is conceptually simpler and has
+a much smaller code footprint---better for embedded environments, than the
+$ O(1) $ scheduler.
 
 \subsubsection{Limitations}
-CFS operates at $ O(log n) $ efficiency (inserting a task back into the red black tree), which is less efficient than the $ O(1) $ scheduler, but CFS achieves fairness by virtue of its implementation, without favoring any particular kind of task (e.g. interactive vs non-interactive).
+CFS operates at $ O\left(\log n\right) $ efficiency (inserting
+a task back into the red black tree), which is less efficient than the
+$ O(1) $ scheduler, but CFS achieves fairness by virtue of its
+implementation, without favoring any particular kind of task (e.g.
+interactive vs non-interactive).
 
 \section{Related Works}
 \label{sec:related_works}
 Previous hardware scheduling units focus completely on embedded systems with
 a fixed number of tasks each with fixed priority
-\cite{kuacharoen2003configurable, morton2004hardware, nacul2007hardware, nakano1995hardware,
-park2008hardware}.  Scheduling under these fairly restrictive constraints is
-greatly simplified with respect to desktop scheduling as there is a much
-more defined ordering between tasks.
+\cite{kuacharoen2003configurable, morton2004hardware, nacul2007hardware,
+nakano1995hardware, park2008hardware}.  Scheduling under these fairly
+restrictive constraints is greatly simplified with respect to desktop
+scheduling as the desktop scheduler is much more defined ordering between
+tasks.
 
 Additionally, there is often a small number of tasks relative to a desktop
 environment.  This means that much simpler algorithms may be used in an
@@ -152,16 +206,16 @@ of memory.
 Because we aim to support an unbounded number of tasks, we must implement
 a scheduler comparable to the default CFS currently used by the kernel.
 While a simpler implementation than the kernel default, the FLASH scheduler
-is implemented in accordance with the major principle of CFS
+is implemented in accordance with the major principles of CFS
 \cite{wong2008cfs}.
 
 We should also consider the architecture of previous hardware schedulers.
 Many of the previously cited works were designed either as ASICs
 (Application Specific Integrated Circuits) or on FPGAs (Field Programmable
-Gate Arrays) rather than a general purpose CPUs.  This makes scheduling of
-resource usage slightly different in that there is not always an overhead of
-a context switch: we may simply be deciding which process can use
-a particular multiplier.
+Gate Arrays) rather than a general purpose CPUs.  This makes resource
+allocation and scheduling slightly different in that there is not always an
+overhead of a context switch: we may simply be deciding which process can
+use a particular multiplier.
 
 
 \section{FLASH Architecture}
@@ -377,13 +431,26 @@ CFS, relying upon the notion of a priority-weighted virtual runtime.
 		%\includegraphics[width=0.65\textwidth]{fig/flash-diagram.png}
 		\includegraphics[width=0.9\linewidth]{fig/hlsctos.jpg}
 		\caption{
-			The SystemC workflow. The design is written using SystemC, and then \"scheduled\", or compiled to RTL using specified design paramteres and the CtoS compiler.
+			The SystemC workflow. The design is written using SystemC, and then ``scheduled'', or compiled to RTL using specified design paramteres and the CtoS compiler.
 		}
 		\label{fig:ctos_overview}
 	\end{center}
 \end{figure}
 
-In testing FLASH, a platform that enables rapid prototyping is essential. There are two components to prototyping FLASH; however. The first is the choice of devlopment language. While the software component must be written in C, there are many choices for a hardware descriptive language. In order to quickly iterate on the design of FLASH, a high level hardware descriptive language was chosen, SystemC. Unlike Verilog and VHDL which specify hardware at essentially the Register Transfer Level (RTL), SystemC allows designs to be specified in \"hardware\" aware C/C++. Designs can be written using C/C++ syntax and a basic notion of time flow, but the code style is still oriented towards hardware limitations, excluding constructs like pointers, dynamic memory allocation, dynamic stack values, and things generally made possible by having a large standard library and a large memory bank. We use Cadence C-to-Silocon (CtoS) to compile our SystemC code to RTL, which is then used in our second prototyping component.
+In testing FLASH, a platform that enables rapid prototyping is essential.
+There are two components to prototyping FLASH; however. The first is the
+choice of devlopment language. While the software component must be written
+in C, there are many choices for a hardware descriptive language. In order
+to quickly iterate on the design of FLASH, a high level hardware descriptive
+language was chosen, SystemC. Unlike Verilog and VHDL which specify hardware
+at the Register Transfer Level (RTL), SystemC allows designs to
+be specified in ``hardware'' aware C/C++. Designs can be written using C/C++
+syntax and a basic notion of time flow, but the code style is still oriented
+towards hardware limitations, excluding constructs like pointers, dynamic
+memory allocation, dynamic stack values, and things generally made possible
+by having a large standard library and a large memory bank. We use Cadence
+C-to-Silocon (CtoS) to compile our SystemC code to RTL, which is then used
+in our second prototyping component.
 
 Since our design is a hybrid between custom hardware and software, we need a device that is capable of being dynamically reconfigured combined with a Linux-capable processor. Such a platform is the Arrow SoCKiT, powered by Altera's Cyclone V.
 
@@ -400,7 +467,10 @@ Since our design is a hybrid between custom hardware and software, we need a dev
 	\end{center}
 \end{figure}
 
-The Cyclone V family of Field Programmable Gate Arrays (FPGA) also include System on Chip (SoC) configurations. In these configurations, the FPGA is connected to a hard processor system (HPS) realized by an ARM Cortex A9, as shown in \ref{fig:sockit_overview}.
+The Cyclone V family of Field Programmable Gate Arrays (FPGA) also include
+System on Chip (SoC) configurations. In these configurations, the FPGA is
+connected to a hard processor system (HPS) realized by an ARM Cortex A9, as
+shown in Figure~\ref{fig:sockit_overview}.
 
 \subsubsection{Quartus}
 The first step in realizing our design is synthesizing the design using Altera Quartus II. Quartus is Altera's IDE for designing and verifying RTL descriptions targeted at their FPGAs. Once the design is compiled to RTL using CtoS, it is then configured in Quartus using Qsys, which is a system integration tool also developed by Altera that facilitates the task of connection complex modules to complex systems. In order to communicate with the HPS, hardware modules are connected to the Avalon MM bus which is implemented on top of ARM's AMBA AXI interface for communication with the ARM processor. Once the design is connected using Qsys, it is synthesized using Quartus, and then a bitstream used to program the FPGA is generated.
@@ -417,13 +487,33 @@ The first step in realizing our design is synthesizing the design using Altera Q
 	\end{center}
 \end{figure}
 
-U-Boot is a bootloader targetted for embedded devices, similar to GRUB for desktop Linux computers. U-Boot differs from GRUB in that its boot paramters are included in the generated binary for the target device, specifying the location of the kernel image and a special file called the Device Tree Blob (DTB). The DTB is essentially a binary form of the Device Tree Source (DTS), which specifies all the hardware available to the processor on the embedded device, and their address location and size. Support for generating device tree blobs is part of the kernel \cite{dts_linux}, and provides a simple mechanism for embedded developers to make their hardware available to the associated processor. We use the dts for the Cyclone V provided by RocketBoard.org, who provide linux sources and tools for various embedded devices, and modify it to include the \"lightweight bus\", or the Avalon MM interface, and specify the address of our \"flash\" device.
+U-Boot is a bootloader targetted for embedded devices, similar to GRUB for
+desktop Linux computers. U-Boot differs from GRUB in that its boot paramters
+are included in the generated binary for the target device, specifying the
+location of the kernel image and a special file called the Device Tree Blob
+(DTB). The DTB is essentially a binary form of the Device Tree Source (DTS),
+which specifies all the hardware available to the processor on the embedded
+device, and their address location and size. Support for generating device
+tree blobs is part of the kernel \cite{dts_linux}, and provides a simple
+mechanism for embedded developers to make their hardware available to the
+associated processor. We use the dts for the Cyclone V provided by
+RocketBoard.org, who provide linux sources and tools for various embedded
+devices, and modify it to include the ``lightweight bus'', or the Avalon MM
+interface, and specify the address of our ``flash'' device.
 
-The kernel image is cross built using the GCC ARM v7 toolchain, using the sources from rocketboards.org configured for the Cyclone V SoCKiT. These sources contain branches for a variety of SoC devices as well as configurations for accessing their hardware, with the Cyclone V layout shown in Figure \ref{fig:cyclone_diag}. Then to boot Linux on the SoC, the SoCKiT must be configured to boot from the appropriate source, either over ethernet using BOOTP or as in our case, from a micro SD card. The U-Boot image is used to bootstrap the Linux kernel \emph{uImage} also located on that same source. 
+The kernel image is cross built using the GCC ARM~v7 toolchain, using the
+sources from rocketboards.org configured for the Cyclone V SoCKiT. These
+sources contain branches for a variety of SoC devices as well as
+configurations for accessing their hardware, with the Cyclone V layout shown
+in Figure \ref{fig:cyclone_diag}. Then, to boot Linux on the SoC, the SoCKiT
+must be configured to boot from the appropriate source, either over ethernet
+using BOOTP or as in our case, from a micro SD card. The U-Boot image is
+used to bootstrap the Linux kernel \emph{uImage} also located on that same
+source. 
 
 \subsubsection{Ubuntu Linaro}
 \label{subsubsec:linaro}
-However, a root filesystem still needs to be provided. There are two main choices; a Buildroot distribution, which is a distribution targeted specifically for embedded devices. We will talk more about Buildroot in Section \ref{sec:eng_exp}. The option we chose was Ubuntu Linaro, a distribution of Ubuntu targeted for ARM devices. Since the Cyclone V contains a relatively powerful ARM processor, it is capable of running a full desktop Linux distribution backed by the micro SD card. We use this as our basis of evaluation to determine the relevance of FLASH in a practical device such as a smartphone or Chromebook. The Ubuntu Linaro distribution also has access to a larger collection of software, such as Xorg and gcc, both of which were to be part of our evaluation. The Linaro distribution can be downloaded as an archive containing the entire root filesystem, and then extracted to whichever source the kernel will be booted from.
+However, a root filesystem still needs to be provided. There are two main choices; a Buildroot distribution, which is a distribution targeted specifically for embedded devices. We will talk more about Buildroot in Section \ref{sec:eng_exp}. The option we chose was Ubuntu Linaro, a distribution of Ubuntu targeted for ARM devices. Since the Cyclone V contains a relatively powerful ARM processor, it is capable of running a full desktop Linux distribution backed by the micro SD card. We use this as our basis of evaluation to determine the relevance of FLASH in a practical device such as a smartphone or Chromebook. The Ubuntu Linaro distribution also has access to a larger collection of software, such as Xorg and gcc, both of which are critical to evaluation. The Linaro distribution can be downloaded as an archive containing the entire root filesystem, and then extracted to whichever source the kernel will be booted from.
 
 \subsection{Kernel Modifications}
 % Chae
@@ -487,38 +577,80 @@ have multiple tasks in the runnable state.
 \subsubsection{Kernel space Interface}
 To further abstract the implementation of the scheduling policy, a pleasant
 interface is provided to the user were she to use standard kernel functions
-functions to control the behavior of the scheduler in the non-default way.
+functions to control the behavior of the scheduler in a non-default way.
 This includes updating process priority or state of those processes on the
 FLASH scheduling policy.  A \texttt{struct} with these relevant fields is
 provided so that only the driver need worry about the bit ordering that the
-device itself expects to receive.  This interface, for example, would allow
-users of both little endian and big endian a generic interface in a similar
-way the socket API provides functions such as \texttt{htonl} and
+device itself expects to receive.  This interface, for example, would
+provide users of both little endian and big endian a generic interface in
+a similar way the socket API provides functions such as \texttt{htonl} and
 \texttt{ntohs}.
 
 
 \section{Applications}
 \label{sec:apps}
 % Mark
-Our intention in developing FLASH was to produce a device that would ultimately find adoption in heterogeneous computing platforms (like the Apple \"A Series\"), where specialized function cores are used to accelerate the function of a CPU. We also believe that our device can be relevant as an accelerator unit in modern monolithic CPUs.
+Our intention in developing FLASH was to produce a device that would ultimately find adoption in heterogeneous computing platforms (like the Apple ``A Series''), where specialized function cores are used to accelerate the function of a CPU. We also believe that our device can be relevant as an accelerator unit in modern monolithic CPUs.
 
 \subsection{MMU-like Device}
 \label{subsec:mmu}
-The Memory Management Unit is a fundamental part of all processors with large amounts of RAM. Its task is to keep accesses to virtual memory fast and correct, and to alleviate many of the memory performance issues associated with multi-tasking operating systems and large address spaces. Without the MMU, the virtual memory abstraction provided by operating systems would result in multiple access for every single memory access a program makes. The TLB is the core of the MMU and its task is to cache a fixed number of virtual memory translations. The size of the cache depends on the hardware, but for the Cortex A9, it contains up to 4 by 32 entries, resulting in at least 8192 bits of storage, assuming 32 bit addresses \cite{arm_mmu}.
+The Memory Management Unit is a fundamental part of all processors with
+large amounts of RAM. Its task is to keep accesses to virtual memory fast
+and correct and to alleviate many of the memory performance issues
+associated with multi-tasking operating systems and large address spaces.
+Without the MMU, the virtual memory abstraction provided by operating
+systems would result in multiple access for each memory access a program
+makes. The Translation Lookaside Buffer (TLB) is the core of the MMU and its
+task is to cache a fixed number of virtual memory translations. The size of
+the cache depends on the hardware. For the Cortex A9, the TLB contains up to
+4 by 32 entries, resulting in at least 8192 bits of storage (assuming 32 bit
+addresses) \cite{arm_mmu}.
 
 The information for the total number of gates an MMU requires in a given CPU architecture is not very forthcoming, but the factor that normally dominates a design size is the memory usage. Our design by comparison uses 8.5 kb of storage, which is directly comparable to the memory usage of the Cortex A9 MMU.
 
 \subsection{Obstacles to Adoption}
-The main reason why the MMU is present on any desktop operating system processor is that its performance boost is crucial to keeping these devices running fast, as explained in \ref{subsec:mmu}. There are two improvements FLASH could potentially bring, and need to be proven in order for any sort of adoption to take place, one feature that must be further researched, which we talk about in \ref{subsec:flash_size}, and a final aspect which must be addressed.
+The main reason why the MMU is present on any desktop operating system
+processor is that its performance boost is crucial to keeping these devices
+running fast, as explained in Section~\ref{subsec:mmu}. There are two
+improvements FLASH could potentially bring, and need to be proven in order
+for any sort of adoption to take place, one feature that must be further
+researched, which we talk about in Section~\ref{subsec:flash_size}, and
+a final aspect which must be addressed.
 
 \subsubsection{Performance}
-The first improvement is performance improvements; as the MMU makes memory access fast, FLASH must also demonstratebly make scheduling fast. The acceptable level of \"fast\" likely depends on the target workload. Perhaps it is fine if FLASH is not much faster so long as it provides significant energy efficiency over computing in software. Naturally, slower CPUs will take longer to make a scheduling decision, but FLASH is plenty on a 50 MHz clock, with 50,000 cycles to make a scheduling decision at a 1 kHz clock speed. Thus, FLASH is less sensitive to processor speed than processors are in the context of making scheduling decisions. For this reason, we believe that low power systems would be ideal candidates for FLASH adoption.
+The first improvement is performance improvements; as the MMU makes memory
+access fast, FLASH must also demonstratebly make scheduling fast. The
+minimum acceptable speed likely depends on the target workload.  It may be
+permissible if FLASH is not much faster so long as it provides significant
+energy efficiency over computing in software. Naturally, slower CPUs will
+take longer to make a scheduling decision.  However, FLASH operates on a 50
+MHz clock.  This means with 50,000 cycles to make a scheduling decision,
+FLASH can make scheduling decisions at approximately 1 kHz. Thus, FLASH is
+less sensitive to processor speed than processors are in the context of
+making scheduling decisions. For this reason, we believe that low power
+systems would be ideal candidates for FLASH adoption.
 
 \subsubsection{Energy Savings}
-Some low power systems (like smartphones) are as complex, if not more so, than laptops and desktops. In the case of smartphones, many of them contain dedicated Intellectual Property cores (IP) that performs certain tasks, like network management, video acceleration, usb communication, etc. These IP cores typically free up the CPU from performing a processing intensive task that it either cannot perform (WiFi communication) or would be tedious (SPI communication). We believe that FLASH can benefit such a system. FLASH would free up the CPU on smartphones to service the interrupts it constantly receives instead of repeating the mundane task of scheduling the many background tasks that run on thse devices.
+Some low power systems (like smartphones) are as complex, if not more so,
+than laptops and desktops. In the case of smartphones, many contain
+dedicated Intellectual Property cores (IP) that perform certain tasks, like
+network management, video acceleration, usb communication, and so on. These IP
+cores typically free up the CPU from performing a processing intensive task
+that it either cannot perform (WiFi communication) or would be tedious (SPI
+communication). We believe that FLASH can benefit such a system. FLASH would
+free up the CPU on smartphones to service the interrupts it constantly
+receives instead of repeating the mundane task of scheduling the many
+background tasks that run on thse devices.
 
 \subsubsection{Infinite Tasks}
-Since FLASH is a hardware construct, it has a finite amount of memory. Thus, it can only support a maximum number of tasks. Since threads are also schedulable entities, this maximum number can be reached relatively easily on a desktop Linux environment. Thus, it will be necessary for FLASH to maintain structures in main memory in order to support an unbounded number of tasks. The semantics of this management might consist of evicting tasks that are unlikely to run anytime soon because they have already run for too long.
+Since FLASH is a hardware construct, it has a finite amount of memory. Thus,
+it can only support a fixed maximum number of tasks. Since threads are also
+schedulable entities, this maximum number can be reached relatively easily
+on a desktop Linux environment. Thus, it will be necessary for FLASH to
+maintain structures in main memory in order to support an unbounded number
+of tasks.  This might involve evicting tasks that have a long runtime and
+are less likely to continue running in the future.
+
 
 \section{Engineering Experiences}
 \label{sec:eng_exp}
@@ -528,15 +660,50 @@ The road to Ubuntu Linaro on the SoCKiT with a communicable FLASH device was fra
 \subsection{DE2}
 Our initial testing environment was the Terasic DE2, an FPGA development board powered by Altera's Cyclone II. It differs greatly from the Cyclone V in that it does not come with a hard processor system; instead one instantiates a NIOS II processor using Altera's tools. The problem was that the combination of the DE2 and the NIOS II processor was prohibitive to building custom kernels.
 
-There were two main problems: booting a custom kernel and developing a NIOS II system.Our first attempt at running Linux on the DE2 was successful using precompiled images, but we would need to modify the kernel and system to add FLASH. Rather than modifying both at the same time, it would be more prudent to modify one at a time and verify that the system still functions. Attempts to build a custom kernel were successful, but booting the kernel was a separate matter. There were simply too many configuration items to inspect, and the documentation and tutorial for doing so all relies on repositories that are no longer in service.
+There were two main problems: booting a custom kernel and developing a NIOS
+II system. Our first attempt at running Linux on the DE2 was successful
+using precompiled images, but we would need to modify the kernel and system
+to add FLASH. Rather than modifying both at the same time, it would be more
+prudent to modify one at a time and verify that the system still functions.
+Attempts to build a custom kernel were successful, but booting the kernel
+was a separate matter. There were simply too many configuration items to
+inspect, and the documentation and tutorial for doing so all relies on
+repositories that are no longer in service.
 
-In trying to synthesize a NIOS II system, one immediate issue was that all resources but one relied on the SOPC Builder, which is the precursor to Qsys. As none of the authors had experience with SOPC Builder, we used the Qsys approach, but were stalled by yet another file to be retrieved from a decommissioned repository. Attempts to regenerate the file and substitute it in the relevant commands yielded results that were not workable. Ultimately, the age of the DE2 was prohibitive to using it as our testbed, and thus we transitioned to the more modern Cyclone V, towards the end of our research.
+In trying to synthesize a NIOS II system, one immediate issue was that all
+resources but one relied on the SOPC Builder, which is the precursor to
+Qsys. As none of the authors had experience with SOPC Builder, we used the
+Qsys approach, but were stalled by yet another file to be retrieved from
+a decommissioned repository. Attempts to regenerate the file and substitute
+it in the relevant commands yielded results that were not workable.
+Ultimately, the age of the DE2 was prohibitive to using it as our testbed,
+and thus we transitioned to the more modern Cyclone V towards the end of our
+research.
 
 \subsection{Buildroot}
-Buildroot, as briefly discussed in \ref{subsubsec:linaro}, is a root filesystem for an embedded device. Building and installing buildroot was relatively straightforward. However, when it came to developing software on the device itself to speed up testing, Buildroot offers little options. In addition to lacking Xorg, it also had some routing issues that were prohibitive to getting the package manager to work. Additionally, the package manager did not seem to operate correctly as attempts to use any functions other than its help were met with blank output and a zero exit status. While it was simpler to build than Linaro, it was simply not functional and not representative of a true desktop Linux distribution.
+Buildroot, as briefly discussed in Section~\ref{subsubsec:linaro}, is a root
+filesystem for an embedded device. Building and installing buildroot was
+relatively straightforward. However, when it came to developing software on
+the device itself to speed up testing, Buildroot offers little options. In
+addition to lacking Xorg, it also had some routing issues that were
+prohibitive to getting the package manager to work. Additionally, the
+package manager did not seem to operate correctly as attempts to use any
+functions other than its help were met with blank output and a zero exit
+status. While it was simpler to build than Linaro, it was simply not
+functional and not representative of a true desktop Linux distribution.
 
 \subsection{Acts of God}
-One of this paper's authors experienced a few severe technical difficulties over the course of research. The largest incidents occured in mid March and early April, essentially costing this author three weeks of productivity. The incident in mid March was the malfunction of this author's last functioning laptop, at which point the author decided it would be prudent to correct his other malfunctioning laptops so that a similar situation would not arise in the future. The incident in early April was the theft of all of the authors laptops, which had recently all been made functional. The author has come to appreciate that anti-theft software is a good investment, and the author has also learned that it is important to synchronize one's work environment across all of one's available development machines.
+One of this paper's authors experienced a few severe technical difficulties
+over the course of research. The largest incidents occured in mid March and
+early April, essentially costing this author three weeks of productivity.
+The incident in mid March was the malfunction of this author's last
+functioning laptop, at which point the author decided it would be prudent to
+correct his other malfunctioning laptops so that a similar situation would
+not arise in the future. The incident in early April was the theft of all of
+the author's laptops, which had recently all been made functional. The
+author has come to appreciate that anti-theft software is a good investment,
+and the author has also learned that it is important to synchronize one's
+work environment across all of one's available development machines.
 
 \subsection{CtoS and RTL}
 As previously mentioned, this undertaking used high level synthesis (HLS)
@@ -578,16 +745,31 @@ While the framework of the FLASH scheduler is complete, it still needs to be tes
 		\label{fig:dma_diag}
 	\end{center}
 \end{figure}
-In Direct Memory Access (DMA), a controller handles the task of maintaining memory coherency with the processor while it is executing, as shown in \ref{fig:dma_diag}. This overhead is justified because the processor can continue executing while the controller interfaces with the device to read/store data. The advantage of DMA in the context of FLASH is that instead of performing an ioread/iowrite everytime a scheduler event occurs, the processor and device can use the DMA as a liason and access the data when they are ready.
+In Direct Memory Access (DMA), a controller handles the task of maintaining
+memory coherency with the processor while it is executing, as shown in
+\ref{fig:dma_diag}. This overhead is justified because the processor can
+continue executing while the controller interfaces with the device to
+read/store data. The advantage of DMA in the context of FLASH is that
+instead of performing an \texttt{ioread}/\texttt{iowrite} everytime a scheduler event occurs,
+the processor and device can use the DMA as a liason and access the data
+when they are ready.
 
-This does not negate the necessity of retrieving a new process immediately if the current process calls \verb|sched_yield|, for example, but it reduces the number of ioreads/iowrites when there are plenty of processes in the running state.
+This does not negate the necessity of retrieving a new process immediately
+if the current process calls \verb|sched_yield|, for example, but it reduces
+the number of \texttt{ioread}s/\texttt{iowrite}s when there are plenty of processes in the
+running state.
 
 \subsection{No HZ Interrupt}
 Desktop Linux kernels use a timer to manage rescheduling needs. The speed of the timer directly corresponds to the interactivity of the kernel, with 1000 Hz yielding the most interactive kernel configuration supported, but with necessarily the poorest throughput. In transitioning to DMA, we can decide whether or not to raise interrupts after FLASH has made a scheduling decision. If our decision is the same as the currently running process, then there's no reason to raise an interrupt. This is another source of a potential performance improvement on tasks like a full kernel build, for example, where there are likely to be few other runnable tasks in the system.
 
 \subsection{FLASH Size}
 \label{subsec:flash_size}
-In order to tackle the question of how does FLASH stack up to other embedded CPU accelerators (MMU, memory controller) of similar functionality, we also need to know the size (area and gate usage) of these components, as well as FLASH when synthesized for a specific technology node. Unfortunately, the information of these sizes is not made publically available, and would likely require us to get in contact with engineers at various Intel, AMD, or ARM.
+In order to tackle the question of how does FLASH stack up to other embedded
+CPU accelerators (MMU, memory controller) of similar functionality, we also
+need to know the size (area and gate usage) of these components, as well as
+FLASH when synthesized for a specific technology node. Unfortunately, the
+information of these sizes is not made publically available, and would
+likely require us to get in contact with engineers at Intel, AMD, or ARM.
 
 \subsection{SMP Support}
 The current implementation of FLASH has no knowledge of multiple processors. This is problematic bacause only one task can be running at a time from the point of view of FLASH. However, enabling SMP support in FLASH is not as simple as informing FLASH of the number of CPUs in a register, the hardware also needs to be able to make scheduling decisions for each of the processors efficiently. Naturally, this increases the logic usage for the scheduling kernel, but ideally the number of tasks supported in memory need not be increased, thus keeping the memory usage, and potentially area usage, still low and competitive with other CPU units.
@@ -595,7 +777,15 @@ The current implementation of FLASH has no knowledge of multiple processors. Thi
 \section{Conclusion}
 \label{sec:conclusion}
 % \lipsum[1]
-In this paper, we present FLASH, a hardware scheduler accelerator designed to replace an operating system scheduler. FLASH performs scheduling decisions in hardware, thus freeing up the CPU to focus on useful work. FLASH implements a time-sharing algorithm, which allows for good interactivity on desktop workloads. Future work for FLASH involves using DMA to further free up CPU time in combination with interrupts, to reduce the number of unnecessary scheduler interrupts. Additional future work involves demonstrating the viability of FLASH in various devices like smartphones and integration with CPUs.
+In this paper, we present FLASH, a hardware scheduler accelerator designed
+to replace an operating system scheduler. FLASH performs scheduling
+decisions in hardware, thus freeing up the CPU to focus on useful work.
+FLASH implements a time-sharing algorithm, which allows for good
+interactivity on desktop workloads. Future work for FLASH involves using DMA
+to further free up CPU time in combination with interrupts, to reduce the
+number of unnecessary scheduler interrupts. Additional future work involves
+demonstrating the viability of FLASH in various devices like smartphones as
+well as direct, tight integration with CPUs.
 
 \nocite{*}
 {
