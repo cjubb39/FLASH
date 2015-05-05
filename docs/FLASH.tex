@@ -58,7 +58,7 @@ a combination of a few different reasons.
 The translation lookaside buffer (TLB) is a hardware structure that assists
 the memory management unit (MMU) of the CPU in translating virtual addresses
 into physical addresses. The TLB serves as a cache to look up commonly used
-virtual addresses and return the corresponding physical address. In
+virtual addresses and returns the corresponding physical address. In
 computationally expensive portions of code, this unit is advantageous as it
 prevents unnecessary page lookups when the code is accessing small regions
 of memory. Likewise, the cache on a CPU provides good speedups to these
@@ -125,12 +125,12 @@ useful work.
 \section{Scheduling in the Kernel}
 \label{sec:sched_in_kernel}
 % Mark
-Modern desktop operating systems have to run hundreds of tasks, while providing a responsive interface to the user. This means that the CPU must be able to serve many interrupts a second from various hardware devices and service dozens or even hundreds of background tasks while presenting a lag-less experience to the end user. Each of these sources introduce potential sources of latency: interrupt handling \cite{regehr2007safe} requires many techniques in both hardware and software implementations to maintain relatively cheap; and, efficient scheduler design is an ongoing field of research \cite{wong2008cfs, park2008hardware, morton2004hardware}. We chose to focus on scheduling for our research as the potential benefits of scheduling in hardware in an operating system are not explored in the context of a desktop workload.
+Modern desktop operating systems have to run hundreds of tasks, while providing a responsive interface to the user. This means that the CPU must be able to serve many interrupts a second from various hardware devices and service dozens or even hundreds of background tasks while presenting a lag-less experience to the end user. Each of these sources introduces potential sources of latency. Interrupt handling \cite{regehr2007safe} requires many techniques, in both hardware and software implementations, to maintain relatively cheap. Efficient scheduler design is an ongoing field of research \cite{wong2008cfs, park2008hardware, morton2004hardware}. We chose to focus on scheduling for our research as the potential benefits of scheduling in hardware in an operating system are not explored in the context of a desktop workload.
 
 \subsection{History of Linux Schedulers}
-The linux scheduler has gone through some major design changes in its scheduler. Before the introduction of the $ O(n) $ scheduler in Linux 2.4, scheduler implementations as simple and fast as CPUs themselves had not become complex compared to modern CPUs with simultaneous multi-threading (SMT) and symmetric multi-processing (SMP). These implementations were not scalable to multiple processors, so the $ O(n) $ scheduler was introduced to solve these problems. The $ O(n) $ scheduler worked well as long as the number of tasks remained low, but, as it had a single runqueue for all CPUs in a system, scaled poorly as the number of CPUs and processes grew (since it must iterate through the list of all processes to select a candidate).
+The Linux scheduler has gone through some major design changes in its scheduler. Before the introduction of the $ O(n) $ scheduler in Linux 2.4, scheduler implementations as simple and fast as CPUs themselves had not become complex compared to modern CPUs with simultaneous multi-threading (SMT) and symmetric multi-processing (SMP). These implementations were not scalable to multiple processors, so the $ O(n) $ scheduler was introduced to solve these problems. The $ O(n) $ scheduler worked well as long as the number of tasks remained low, but, as it had a single runqueue for all CPUs in a system, scaled poorly as the number of CPUs and processes grew (since it must iterate through the list of all processes to select a candidate).
 
-The $ O(1) $ scheduler was introduced to solve the problem of a large number of tasks. As the name implies, it is able to select a task to run in constant time. The $ O(1) $ scheduler achieves this efficiency by exploiting per-priority \textit{active} and \textit{expired} arrays for tasks. Tasks that are eligible to run are placed in the \textit{active} array and once a task has completed running it is placed in the \textit{expired} array. Thus, selecting a task is as fast as dequeuing the head of the highest priority array. Once the \textit{active} array is empty, the \textit{active} and \emph{expired} arrays are swapped by simply changing pointer directions. Unlike the $ O(n) $ processor, it had per-CPU runqueues, meaning task scheduling did not stall other CPUs.
+The $ O(1) $ scheduler was introduced to solve the problem of a large number of tasks. As the name implies, it is able to select a task to run in constant time. The $ O(1) $ scheduler achieves this efficiency by exploiting per-priority \textit{active} and \textit{expired} arrays for tasks. Tasks that are eligible to run are placed in the \textit{active} array and once a task has completed running it is placed in the \textit{expired} array. Thus, selecting a task is as fast as retrieving the head of the highest priority array. Once the \textit{active} array is empty, the \textit{active} and \emph{expired} arrays are swapped by simply changing pointer directions. Unlike the $ O(n) $ processor, it had per-CPU runqueues, meaning task scheduling did not stall other CPUs.
 The $ O(1) $ was effective at its job, but was not a fair scheduler; was difficult to maintain through major kernel revisions; and used heuristics to determine the interactivity of a process in a flawed way. The CFS scheduler was introduced in Linux 2.6 as a replacement to solve the interactivity issues of the $ O(1) $ scheduler and introduce a simpler yet efficient scheduler.
 
 \subsection{Implementation of CFS}
@@ -191,7 +191,7 @@ restrictive constraints is greatly simplified with respect to desktop
 scheduling as the desktop scheduler is much more defined ordering between
 tasks.
 
-Additionally, there is often a small number of tasks relative to a desktop
+Additionally, there are often a small number of tasks relative to a desktop
 environment.  This means that much simpler algorithms may be used in an
 attempt to approximate the optimal task ordering.
 
@@ -204,7 +204,7 @@ future iterations will remove this restriction by reserving a small section
 of memory.
 
 Because we aim to support an unbounded number of tasks, we must implement
-a scheduler comparable to the default CFS currently used by the kernel.
+a scheduler comparable to the default CFS scheduler.
 While a simpler implementation than the kernel default, the FLASH scheduler
 is implemented in accordance with the major principles of CFS
 \cite{wong2008cfs}.
@@ -397,11 +397,10 @@ CFS.  FLASH additionally stores other minor fields for bookkeeping purposes.
 
 \paragraph{On Red-Black Trees}
 While using a red-black tree would allow the implementation to be
-asymptotically faster, actual runtime in software will likely be higher than
-iterating through a simple queue implemented in hardware.  Firstly, hardware
+asymptotically faster, actual runtime in software is likely to be higher than
+the number of cycles needed to iterate through a simple queue in hardware.  Firstly, hardware
 will simply be faster than software as it is more easily parallelizable.
-The hardware can parallelize comparisons in logarithmic time, whereas an
-iteration in software will take linear time.
+The hardware can parallelize comparisons in logarithmic time, whereas iteration in software will take linear time.
 
 Secondly, traversing the red-black tree in software will not have ideal cache
 performance. Switching to a self-contained hardware module will not have any
@@ -416,7 +415,7 @@ runtime.  Other fields are for bookkeeping.
 
 \subsection{Summary}
 Together the interface and implementation of FLASH provide an easily
-integratable scheduling module.  The kernel will interface with the hardware
+integrable scheduling module.  The kernel will interface with the hardware
 unit in the same way that the software scheduler does.  Additionally, FLASH
 implements the fundamental algorithm of the current default Linux scheduler
 CFS, which schedules based on priority-weighted virtual runtimes.
@@ -466,7 +465,7 @@ Since our design is a hybrid between custom hardware and software, we need a dev
 	\end{center}
 \end{figure}
 
-The Cyclone V family of Field Programmable Gate Arrays (FPGA) also include
+The Cyclone V family of Field Programmable Gate Arrays (FPGA) also includes
 System on Chip (SoC) configurations. In these configurations, the FPGA is
 connected to a hard processor system (HPS) realized by an ARM Cortex A9, as
 shown in Figure~\ref{fig:sockit_overview}.
@@ -493,10 +492,10 @@ location of the kernel image and a special file called the Device Tree Blob
 (DTB). The DTB is essentially a binary form of the Device Tree Source (DTS),
 which specifies all the hardware available to the processor on the embedded
 device, and their address location and size. Support for generating device
-tree blobs is part of the kernel \cite{dts_linux}, and provides a simple
+tree blobs is part of the kernel \cite{dts_Linux}, and provides a simple
 mechanism for embedded developers to make their hardware available to the
 associated processor. We use the dts for the Cyclone V provided by
-RocketBoard.org, who provide linux sources and tools for various embedded
+RocketBoard.org, who provide Linux sources and tools for various embedded
 devices, and modify it to include the ``lightweight bus'', or the Avalon MM
 interface, and specify the address of our ``flash'' device.
 
@@ -525,7 +524,7 @@ a scheduler.
 \subsubsection{FLASH Device Driver}
 The primary purpose of the FLASH device driver is to facilitate
 communication between the Linux kernel and the FLASH hardware device.
-Because the possible types of communication is quite limited, the device
+Because the possible types of communication are quite limited, the device
 driver is fairly simple.  The kernel either asks for a task to schedule or
 provides an update about process status.  In the opposite direction, the
 device only provides the next tasks to be run as well as raising an
@@ -568,14 +567,14 @@ below policies such as real-time.
 \paragraph{Scheduling Policy Priorities}
 The available scheduling classes in the Linux kernel are kept in
 a prioritized linked list.  Here priority refers to the ordering in which
-scheduling policies will be asked for a tasks to next run.  A higher
+scheduling policies will be asked for tasks to run next.  A higher
 priority policy, such as real-time, will always be able to run a task if it
 has one in the runnable state, even if lower priority policies such as idle
 have multiple tasks in the runnable state.
 
 \subsubsection{Kernel space Interface}
 To further abstract the implementation of the scheduling policy, a pleasant
-interface is provided to the user were she to use standard kernel functions
+interface is provided to the user were they to use standard kernel
 functions to control the behavior of the scheduler in a non-default way.
 This includes updating process priority or state of those processes on the
 FLASH scheduling policy.  A \texttt{struct} with these relevant fields is
@@ -598,7 +597,7 @@ large amounts of RAM. Its task is to keep accesses to virtual memory fast
 and correct and to alleviate many of the memory performance issues
 associated with multi-tasking operating systems and large address spaces.
 Without the MMU, the virtual memory abstraction provided by operating
-systems would result in multiple access for each memory access a program
+systems would result in multiple accesses for each memory access a program
 makes. The Translation Lookaside Buffer (TLB) is the core of the MMU and its
 task is to cache a fixed number of virtual memory translations. The size of
 the cache depends on the hardware. For the Cortex A9, the TLB contains up to
@@ -635,7 +634,7 @@ than laptops and desktops. In the case of smartphones and tablets, many contain
 dedicated Intellectual Property cores (IP) that perform certain tasks, like
 network management, video acceleration, USB communication, and so on. These IP
 cores typically free up the CPU from performing a processing intensive task
-that it either cannot perform (WiFi communication) or would be tedious (SPI
+that it either cannot perform (Wi-Fi communication) or would be tedious (SPI
 communication). We believe that FLASH can benefit such a system. FLASH would
 free up the CPU on smartphones to service the interrupts it constantly
 receives instead of repeating the mundane task of scheduling the many
@@ -681,9 +680,9 @@ research.
 
 \subsection{Buildroot}
 Buildroot, as briefly discussed in Section~\ref{subsubsec:linaro}, is a root
-filesystem for an embedded device. Building and installing buildroot was
+filesystem for an embedded device. Building and installing Buildroot was
 relatively straightforward. However, when it came to developing software on
-the device itself to speed up testing, Buildroot offers little options. In
+the device itself to speed up testing, Buildroot's package selection was lacking. In
 addition to lacking Xorg, it also had some routing issues that were
 prohibitive to getting the package manager to work. Additionally, the
 package manager did not seem to operate correctly as attempts to use any
@@ -771,7 +770,7 @@ information of these sizes is not made publically available, and would
 likely require us to get in contact with engineers at Intel, AMD, or ARM.
 
 \subsection{SMP Support}
-The current implementation of FLASH has no knowledge of multiple processors. This is problematic because only one task can be running at a time from the point of view of FLASH. However, enabling SMP support in FLASH is not as simple as informing FLASH of the number of CPUs in a register, the hardware also needs to be able to make scheduling decisions for each of the processors efficiently. Naturally, this increases the logic usage for the scheduling kernel, but ideally the number of tasks supported in memory need not be increased, thus keeping the memory usage, and potentially area usage, still low and competitive with other CPU units.
+The current implementation of FLASH has no knowledge of multiple processors. This is problematic because only one task can be running at a time from the point of view of FLASH. However, enabling SMP support in FLASH is not as simple as informing FLASH of the number of CPUs; the hardware also needs to be able to make scheduling decisions for each of the processors efficiently. Naturally, this increases the logic usage for the scheduling kernel, but ideally the number of tasks supported in memory need not be increased, thus keeping the memory usage, and potentially area usage, still low and competitive with other CPU units.
 
 \section{Conclusion}
 \label{sec:conclusion}
