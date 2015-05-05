@@ -631,7 +631,7 @@ systems would be ideal candidates for FLASH adoption.
 
 \subsubsection{Energy Savings}
 Some low power systems (like smartphones) are as complex, if not more so,
-than laptops and desktops. In the case of smartphones, many contain
+than laptops and desktops. In the case of smartphones and tablets, many contain
 dedicated Intellectual Property cores (IP) that perform certain tasks, like
 network management, video acceleration, usb communication, and so on. These IP
 cores typically free up the CPU from performing a processing intensive task
@@ -670,13 +670,13 @@ inspect, and the documentation and tutorial for doing so all relies on
 repositories that are no longer in service.
 
 In trying to synthesize a NIOS II system, one immediate issue was that all
-resources but one relied on the SOPC Builder, which is the precursor to
+instruction resources but one relied on the SOPC Builder, which is the precursor to
 Qsys. As none of the authors had experience with SOPC Builder, we used the
 Qsys approach, but were stalled by yet another file to be retrieved from
 a decommissioned repository. Attempts to regenerate the file and substitute
 it in the relevant commands yielded results that were not workable.
 Ultimately, the age of the DE2 was prohibitive to using it as our testbed,
-and thus we transitioned to the more modern Cyclone V towards the end of our
+and thus we transitioned to the more modern SoCKiT towards the end of our
 research.
 
 \subsection{Buildroot}
