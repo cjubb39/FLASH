@@ -22,7 +22,19 @@
 \maketitle
 
 \begin{abstract}
-As accelerators become more common and necessary as a way to continue Moore's Law in the absence of Dennard Scaling, researchers explore segments of computation that can be improved with the aid of dedicated hardware. This paper presents FLASH, a hardware scheduler to take over the task of scheduling from the operating system. FLASH differs from previous hardware schedulers by implementing a time sharing algorithm, as opposed to a deadline based or real-time scheduling algorithm. The scheduling decisions it makes are equivalent to those made in common desktop operating schedulers, but in much reduced time and without negatively impacting processor performance features. FLASH is designed to keep kernel modifications minimal, only requiring change when the kernel scheduling interface changes. We discuss the implementation status of FLASH, future work that remains to be done, and its relevance in different computing platforms.
+As accelerators become more common and necessary as a way to continue Moore's
+Law in the absence of Dennard Scaling, researchers explore segments of
+computation that can be improved with the aid of dedicated hardware. This paper
+presents FLASH, a hardware scheduler to take over the task of scheduling from
+the operating system. FLASH differs from previous hardware schedulers by
+implementing a time sharing algorithm, as opposed to a deadline based or real-
+time scheduling algorithm. The scheduling decisions it makes are equivalent to
+those made in common desktop operating schedulers, but in much reduced time and
+without negatively impacting processor performance features. FLASH is designed
+to keep kernel modifications minimal, only requiring change when the kernel
+scheduling interface changes. We discuss the implementation status of FLASH,
+future work that remains to be done, and its relevance in different computing
+platforms.
 
 \end{abstract}
 
@@ -155,10 +167,9 @@ a particular multiplier.
 \section{FLASH Architecture}
 \label{sec:arch}
 % Chae
-The FLASH hardware unit is built with ease of replacement of the usual
-software implementation in mind.  The major addition we add over a standard
-scheduler is the ability for the external scheduler itself to raise an
-interrupt to indicate a tick. Either at this tick or when a process is
+The FLASH hardware unit is built with intention of seamlessly replacing the default software implementation. A major addition we add over a standard
+scheduler is the ability for the scheduler itself to raise an
+interrupt to indicate a tick when it has already computed the result. Either at this tick or when a process is
 requested, FLASH will provide the process ID of the task to the run next.
 Figure~\ref{fig:arch_overview} gives an overview of the system architecture.
 
@@ -175,20 +186,19 @@ Figure~\ref{fig:arch_overview} gives an overview of the system architecture.
 \end{figure}
 
 \subsection{Improvements}
-FLASH provides improvements over the CFS software solutions.  The most
-notable potential advantage is in speed.  Having a separate hardware unit
+FLASH provides improvements over the CFS scheduler. The most
+notable potential advantage is in speed. Having a separate hardware unit
 allows the CPU to be running tasks at the same time the choice of next task
-is being prepared.  This way it can be immediately read without having to
+is being prepared.  This way the next task can be immediately read without having to
 wait for a computation.
 
-Additionally, data structures are maintained on a separate data path.  This
+Additionally, data structures are maintained in a separate memory structure.  This
 means that scheduling computations will not pollute the usual cache
-hierarchy or TLB.  As cache misses are costly, eliminating a small class of
+hierarchy or TLB of a processor.  As cache misses are costly, eliminating a small class of
 them will directly correlate to a performance increase.  This will be
 especially true as modern processor hardware (newer versions of x86 and ARM)
 have more effective TLBs that are not, for example, completely flushed on
-a context switch \cite{neiger2006intel}.  FLASH allows program data a larger
-share of the cache hierarchy and TLB.
+a context switch \cite{neiger2006intel}.
 
 Increasingly, desktop machines are being used as virtualization platforms.
 The problem of TLB hit rate is especially relevant with the added number of
@@ -198,24 +208,24 @@ possible through context switches.
 \subsection{Scheduling Algorithm}
 As previously mentioned, in order to best schedule the set of eligible
 tasks, we use the same fundamental algorithm to which the Linux kernel
-defaults: the Completely Fair Scheduler.  The kernel's implementation
-fundamentally relies upon red-black trees.
+defaults: the Completely Fair Scheduler.
 
-However, implementing a red-black tree in hardware with a fixed amount of
+The kernel's implementation
+fundamentally relies upon red-black trees. However, implementing a red-black tree in hardware with a fixed amount of
 memory would be prohibitively expensive.  For this reason, the FLASH
 implementation utilizes a simple unordered array.  Because there are
-typically very few tasks, the cost of keeping and constantly reorganizing an
+typically few tasks eligble to run, the cost of keeping and constantly reorganizing an
 ordered data structure would outweigh the cost of a simple iteration.
 Further, we must importantly note that this lookup in hardware will be much
 quicker than in software, given that the data is stored in a single
-monolithic, low-latency memory.  Even more convincing is the ease with with
+monolithic, low-latency memory.  Even more convincing is the ease with which
 parallelization of lookup can be implemented using hardware.
 
 FLASH does, however, retain the core functionality of CFS's basic algorithm.
 Scheduling decisions are made using the notion of virtual runtime.   Just as
 in the Linux implementation, virtual runtime is calculated as a weighted
 physical runtime based upon the priority of the task.  FLASH uses the same
-relative weighting as Linux.
+relative weighting as CFS.
 
 We now describe in more detail both the interface and internal
 implementation of the scheduling unit.
@@ -230,21 +240,21 @@ requests for new processes to run.
 
 \subsubsection{Process Control Interface}
 Let us first focus deeply on this process control interface.  It is here
-that FLASH is given information to hold the proper state of all running
+that FLASH is given information on the state of all running
 processes.  Currently, we store process id (PID), priority, and state
 triples as passed through the interface using a standard four-phase
 handshake.
 
 \paragraph{Consistency} A major hurdle with offloading scheduling decisions
 to a dedicated piece of hardware is ensuring consistency between the data
-structures maintained by the software kernel (again, here, Linux) and the
+structures maintained by the software kernel and the
 hardware unit.
 
-We cannot completely offload the data about processes to hardware most
-obviously because of sheer size of objects like the \ttt{task\_struct}.
+We cannot completely offload the data about processes to hardware, most
+obviously because of the size of objects like the \ttt{task\_struct}.
 Additionally, those objects are heavily used by modules other than the
 scheduler.  We must, though, retain some structure in FLASH memory so that
-it may make even the most basic scheduling decisions.
+it may make scheduling decisions comparable to that of CFS.
 
 For this reason, we expect each update in process priority or state to be
 communicated to FLASH so it may continue making accurate scheduling
