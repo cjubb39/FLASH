@@ -488,7 +488,31 @@ Buildroot, as briefly discussed in \ref{subsubsec:linaro}, is a root filesystem 
 \subsection{Acts of God}
 One of this paper's authors experienced a few severe technical difficulties over the course of research. The largest incidents occured in mid March and early April, essentially costing this author three weeks of productivity. The incident in mid March was the malfunction of this author's last functioning laptop, at which point the author decided it would be prudent to correct his other malfunctioning laptops so that a similar situation would not arise in the future. The incident in early April was the theft of all of the authors laptops, which were recently made functional. The author has learned the anti-theft software is good insurance, and the author has also learned that it is important to synchronize one's work environment across all of one's available development machines.
 
-\subsection{CtoS}
+\subsection{CtoS and RTL}
+As previously mentioned, this undertaking used high level synthesis (HLS)
+tools.  In order to use this design, we must synthesize onto the Altera
+board.  This is traditionally done using Altera's proprietary Quartus suite
+of software.  Thus, we need to bridge the gap between the HLS-ready SystemC
+and RTL that can ultimately be synthesized.  In order to do this, we rely
+upon Cadence's C-to-Silicon (CtoS) compiler.  However, CtoS requires that we
+plug into a synthesis tool such as Quartus in order to perform area and
+timing analysis for the design and construction of local memory blocks.
+
+This process, however, was not straightforward.  Because CtoS only supports
+using the subscription version of Quartus and authors did not have enough
+institutional clout to have this expensive license installed on the same
+server as the CtoS tool, the authors were forced to complete this
+compilation to RTL using Quartus's main competitor: Xilinx's Integrated
+Synthesis Environment (ISE).  This resulted in some non-optimized synthesis.
+
+Overall, the experience of using CtoS was pleasant, especially as it allowed
+some design-space exploration, making some area vs timing tradeoffs.
+Because our design only pushed the area capacity of the board with a high
+static task limit, most optimizations erred on the side of timing in order
+to take full advantage of the board's speed.  There was some trouble
+integrating these disjoint toolchains, but with a proper environment setup,
+many of these problems would likely disappear.
+
 
 \section{Future Work}
 \label{sec:future}
