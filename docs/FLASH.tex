@@ -187,7 +187,7 @@ hierarchy or TLB.  As cache misses are costly, eliminating a small class of
 them will directly correlate to a performance increase.  This will be
 especially true as modern processor hardware (newer versions of x86 and ARM)
 have more effective TLBs that are not, for example, completely flushed on
-a context switch\cite{neiger2006intel}.  FLASH allows program data a larger
+a context switch \cite{neiger2006intel}.  FLASH allows program data a larger
 share of the cache hierarchy and TLB.
 
 Increasingly, desktop machines are being used as virtualization platforms.
@@ -205,17 +205,17 @@ However, implementing a red-black tree in hardware with a fixed amount of
 memory would be prohibitively expensive.  For this reason, the FLASH
 implementation utilizes a simple unordered array.  Because there are
 typically very few tasks, the cost of keeping and constantly reorganizing an
-ordered data structure would would outweigh a simple iteration.  Further, we
-must importantly note that this lookup in hardware will be much quicker than
-in software, given that the data is stored in a single monolithic,
-low-latency memory.  Even more convincing is the ease with with
+ordered data structure would outweigh the cost of a simple iteration.
+Further, we must importantly note that this lookup in hardware will be much
+quicker than in software, given that the data is stored in a single
+monolithic, low-latency memory.  Even more convincing is the ease with with
 parallelization of lookup can be implemented using hardware.
 
-FLASH does, however, retain the core functionality of the CFS basis
-algorithm.  Scheduling decisions are made using the notion of virtual
-runtime.   Just as in the Linux implementation, virtual runtime is
-calculated as a weighted physical runtime based upon the priority of the
-task.  FLASH uses the same relative weighting as Linux.
+FLASH does, however, retain the core functionality of CFS's basic algorithm.
+Scheduling decisions are made using the notion of virtual runtime.   Just as
+in the Linux implementation, virtual runtime is calculated as a weighted
+physical runtime based upon the priority of the task.  FLASH uses the same
+relative weighting as Linux.
 
 We now describe in more detail both the interface and internal
 implementation of the scheduling unit.
@@ -237,14 +237,14 @@ handshake.
 
 \paragraph{Consistency} A major hurdle with offloading scheduling decisions
 to a dedicated piece of hardware is ensuring consistency between the data
-structures maintained by the software kernel (again, here Linux) and the
+structures maintained by the software kernel (again, here, Linux) and the
 hardware unit.
 
 We cannot completely offload the data about processes to hardware most
-obviously because of sheer size of objects like the \ttt{task\_struct} as
-well as their high use by modules other than the scheduler.  We must,
-though, retain some structure in FLASH memory so that it may make even the
-most basic scheduling decisions.
+obviously because of sheer size of objects like the \ttt{task\_struct}.
+Additionally, those objects are heavily used by modules other than the
+scheduler.  We must, though, retain some structure in FLASH memory so that
+it may make even the most basic scheduling decisions.
 
 For this reason, we expect each update in process priority or state to be
 communicated to FLASH so it may continue making accurate scheduling
@@ -261,8 +261,8 @@ tasks switching in the Linux Kernel.
 \paragraph{Scheduling Requests}
 Often a running process will want to do something (such as disk I/O) that
 requires yielding the processor.  When this occurs, the Linux kernel will
-call \texttt{schedule()}.  We modify this schedule function to interact with
-our scheduling control interface, more specifically the portion dealing with
+call \texttt{schedule()}.  We modify this function to interact with our
+scheduling control interface---more specifically the portion dealing with
 scheduling requests.
 
 A scheduling request will be received using a standard four-phase handshake.
@@ -278,14 +278,13 @@ the next task to be run.
 
 \subsection{FLASH Implementation}
 \label{sec:FLASH_impl}
-FLASH aims to implement a CFS scheduling algorithm\footnote{The current
-implementation is a prioritized round robin algorithm.}, allowing
-transparent replacement of the current software implementation.  Internally,
-we have two front-end modules, each corresponding to a segment of the
-interface (process control and scheduling control). Those front-end modules
-connect to back-end modules which regulate and control access to the backing
-internal data structures.  We see this internal implementation architecture
-described in Figure~\ref{fig:impl_overview}.
+FLASH implements a CFS scheduling algorithm, allowing transparent
+replacement of the current software implementation.  Internally, we have two
+front-end modules, each corresponding to a segment of the interface (process
+control and scheduling control). Those front-end modules connect to back-end
+modules which regulate and control access to the backing internal data
+structures.  We see this internal implementation architecture described in
+Figure~\ref{fig:impl_overview}.
 
 \begin{figure*}
 	\begin{center}
@@ -315,7 +314,7 @@ backing store of process state.
 The FLASH back-end modules serve to regulate access to the backing data
 store.  This is done via two modules: a reading module and a writing module.
 The process control datapath is connected through the writing module as this
-interface is used to modify the state of processes.
+interface is used only to modify the state of processes.
 
 Additionally, we have a simple reading module connected to the scheduling
 control interface.  This regulates reads to the backing data store in order
@@ -324,21 +323,22 @@ to determine the next process that ought to be run.
 \subsubsection{Storing Process State}
 The current FLASH implementation is a basic version of CFS.  We do not use
 the same type of implementation as the Linux kernel because implementing
-red-black trees in hardware would be prohibitively complex.  Instead we use
-a series of simple queues that are sorted with priority in mind.
+red-black trees in hardware would be prohibitively complex.  Instead, we use
+a simple array.
 
 The FLASH scheduling algorithm, like CFS, will keep record of the runtime of
-the process as well as a \emph{virtual runtime}.  This virtual runtime is a
-weighted accounting of the actual runtime based on priority of the process.
-Scheduling decisions are made based on the virtual runtime, as in CFS.
+the process as well as a \emph{virtual runtime}.  This virtual runtime is
+a weighted accounting of the actual runtime based on priority of the
+process.  Scheduling decisions are made based on the virtual runtime, as in
+CFS.  FLASH additionally stores other minor fields for bookkeeping purposes.
 
 \paragraph{On Red-Black trees}
 While using a red-black tree would allow the implementation to be
-algorithmically faster, actual runtime in software will likely be higher
-than iterating through a simple queue implemented in hardware.  Firstly,
-hardware will simply be faster than software as it is more easily
-parallelizable.  The hardware can parallelize comparisons in logarithmic
-time, whereas an iteration in software will take linear time.
+asymptotically faster, actual runtime in software will likely be higher than
+iterating through a simple queue implemented in hardware.  Firstly, hardware
+will simply be faster than software as it is more easily parallelizable.
+The hardware can parallelize comparisons in logarithmic time, whereas an
+iteration in software will take linear time.
 
 Secondly, traversing the red-black tree in software will not have ideal cache
 performance. Switching to a self-contained hardware module will not have any
