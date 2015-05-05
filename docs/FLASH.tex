@@ -175,7 +175,7 @@ a much smaller code footprint---better for embedded environments, than the
 $ O(1) $ scheduler.
 
 \subsubsection{Limitations}
-CFS operates at $ O\left(log \left(n\right)\right) $ efficiency (inserting
+CFS operates at $ O\left(\log n\right) $ efficiency (inserting
 a task back into the red black tree), which is less efficient than the
 $ O(1) $ scheduler, but CFS achieves fairness by virtue of its
 implementation, without favoring any particular kind of task (e.g.
