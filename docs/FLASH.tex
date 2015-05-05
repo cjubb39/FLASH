@@ -22,7 +22,7 @@
 \maketitle
 
 \begin{abstract}
-As accelerators become more common and necessary as a way to continue Moore's Law in the absence of Dennard Scaling, researchers explore segments of computation that can be improved with the aid of dedicated hardware. This paper presents FLASH, a hardware scheduler to take over the task of scheduling from the operating system. FLASH differs from previous hardware schedulers in that it implements a time sharing algorithm, as opposed to priority based or real-time scheduling. FLASH is able to make scheduling decisions in much fewer cycles as compared to modern operating system schedulers. The scheduling decisions it makes are equivalent to those made in software, but in much reduced time and without negatively impacting processor performance features. FLASH is designed to keep kernel modifications minimal, only requiring change when the kernel scheduling interface changes.
+As accelerators become more common and necessary as a way to continue Moore's Law in the absence of Dennard Scaling, researchers explore segments of computation that can be improved with the aid of dedicated hardware. This paper presents FLASH, a hardware scheduler to take over the task of scheduling from the operating system. FLASH differs from previous hardware schedulers by implementing a time sharing algorithm, as opposed to a deadline based or real-time scheduling algorithm. The scheduling decisions it makes are equivalent to those made in common desktop operating schedulers, but in much reduced time and without negatively impacting processor performance features. FLASH is designed to keep kernel modifications minimal, only requiring change when the kernel scheduling interface changes. We discuss the implementation status of FLASH, future work that remains to be done, and its relevance in different computing platforms.
 
 \end{abstract}
 
@@ -49,30 +49,33 @@ Finally, we filtered out irrelevant results by searching for entries with fair i
 \begin{center}
 	\begin{tabular}{@{}ll@{}}
 		\toprule
-		CPU Time (\%)      & Symbol Name             \\ \midrule
-		0.2811             & pick\_next\_task\_fair  \\
-		0.2670             & enqueue\_task\_fair     \\
-		0.2197             & dequeue\_task\_fair     \\
-		0.1866             & select\_task\_rq\_fair  \\
-		0.0919             & task\_waking\_fair      \\
-		0.0077             & idle\_enter\_fair       \\
-		0.0071             & migrate\_task\_rq\_fair \\
-		0.0034             & put\_prev\_task\_fair   \\
-		9.9e-05            & task\_tick\_fair        \\
-		5.8e-06            & task\_move\_group\_fair \\
-		\textbf{1.0646048} & \textbf{Total}          \\ \bottomrule
+		CPU Time (\%)      & Symbol Name                    \\ \midrule
+		0.8200             & update\_cfs\_shares            \\
+		0.0515             & update\_cfs\_rq\_blocked\_load \\
+		0.0509             & check\_cfs\_rq\_runtime        \\
+		0.2811             & pick\_next\_task\_fair         \\
+		0.2670             & enqueue\_task\_fair            \\
+		0.2197             & dequeue\_task\_fair            \\
+		0.1866             & select\_task\_rq\_fair         \\
+		0.0919             & task\_waking\_fair             \\
+		0.0077             & idle\_enter\_fair              \\
+		0.0071             & migrate\_task\_rq\_fair        \\
+		0.0034             & put\_prev\_task\_fair          \\
+		9.9e-05            & task\_tick\_fair               \\
+		5.8e-06            & task\_move\_group\_fair        \\
+		\textbf{1.9870048} & \textbf{Total}                 \\ \bottomrule
 	\end{tabular}
 	\caption{The CPU usage of the various functions used by CFS to accomplish its task.}
 	\label{tab:cfs_usage}
 \end{center}
 \end{table}
 
-Overall, just 1.06\% of CPU time was devoted to the CFS scheduler. While this may seem like a negligible amount of time, the CPU presented 8 logical cores for scheduling and operated at 3.25 GHz, equating to:
+Overall, just 1.99\% of CPU time was devoted to the CFS scheduler. While this may seem like a negligible amount of time, the CPU presented 8 logical cores for scheduling and operated at 3.25 GHz, equating to:
 \begin{equation*}
-	3.25\ \text{GHz}*0.0106*8 = 276.8\ \text{MHz}
+	3.25\ \text{GHz}*0.0199*8 = 508.7\ \text{MHz}
 \end{equation*}
 
-276.8 million cycles are wasted each second. FLASH is intended to return most of those cycles back to the CPU to perform useful work.
+508.7 million cycles are wasted each second. FLASH is intended to return most of those cycles back to the CPU to perform useful work.
 
 \section{Scheduling in the Kernel}
 \label{sec:sched_in_kernel}
@@ -582,7 +585,7 @@ The current implementation of FLASH has no knowledge of multiple processors. Thi
 \section{Conclusion}
 \label{sec:conclusion}
 % \lipsum[1]
-In this paper, we present FLASH, a hardware scheduler accelerator designed to replace an operating system scheduler. FLASH performs scheduling decisions in hardware, thus freeing up the CPU and related structures to focus on computation. FLASH only interrupts the CPU when it has made a new decision, and only if that decision differs from the currently running task, thus reducing unnecessary interruptions. We will show the viability of FLASH hardware as an accelerator akin to the MMU by considering its power requirements and area usage.
+In this paper, we present FLASH, a hardware scheduler accelerator designed to replace an operating system scheduler. FLASH performs scheduling decisions in hardware, thus freeing up the CPU to focus on useful work. FLASH implements a time-sharing algorithm, which allows for good interactivity on desktop workloads. Future work for FLASH involves using DMA to further free up CPU time in combination with interrupts, to reduce the number of unnecessary scheduler interrupts. Additional future work involves demonstrating the viability of FLASH in various devices like smartphones and integration with CPUs.
 
 \nocite{*}
 {
