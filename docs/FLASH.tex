@@ -125,7 +125,7 @@ useful work.
 \section{Scheduling in the Kernel}
 \label{sec:sched_in_kernel}
 % Mark
-Modern desktop operating systems have to run hundreds of tasks, while providing a responsive interface to the user. This means that the CPU must be able to serve many interrupts a second from various hardware devices and service dozens or even hundreds of background tasks while presenting a lagless experience to the end user. Each of these sources introduce potential sources of latency: interrupt handling \cite{regehr2007safe} requires many techniques in both hardware and software implementations to maintain relatively cheap; and, efficient scheduler design is an ongoing field of research \cite{wong2008cfs, park2008hardware, morton2004hardware}. We chose to focus on scheduling for our research as the potential benefits of scheduling in hardware in an operating system are not explored in the context of a desktop workload.
+Modern desktop operating systems have to run hundreds of tasks, while providing a responsive interface to the user. This means that the CPU must be able to serve many interrupts a second from various hardware devices and service dozens or even hundreds of background tasks while presenting a lag-less experience to the end user. Each of these sources introduce potential sources of latency: interrupt handling \cite{regehr2007safe} requires many techniques in both hardware and software implementations to maintain relatively cheap; and, efficient scheduler design is an ongoing field of research \cite{wong2008cfs, park2008hardware, morton2004hardware}. We chose to focus on scheduling for our research as the potential benefits of scheduling in hardware in an operating system are not explored in the context of a desktop workload.
 
 \subsection{History of Linux Schedulers}
 The linux scheduler has gone through some major design changes in its scheduler. Before the introduction of the $ O(n) $ scheduler in Linux 2.4, scheduler implementations as simple and fast as CPUs themselves had not become complex compared to modern CPUs with simultaneous multi-threading (SMT) and symmetric multi-processing (SMP). These implementations were not scalable to multiple processors, so the $ O(n) $ scheduler was introduced to solve these problems. The $ O(n) $ scheduler worked well as long as the number of tasks remained low, but, as it had a single runqueue for all CPUs in a system, scaled poorly as the number of CPUs and processes grew (since it must iterate through the list of all processes to select a candidate).
@@ -179,7 +179,7 @@ CFS operates at $ O\left(\log n\right) $ efficiency (inserting
 a task back into the red black tree), which is less efficient than the
 $ O(1) $ scheduler, but CFS achieves fairness by virtue of its
 implementation, without favoring any particular kind of task (e.g.
-interactive vs non-interactive).
+interactive vs. non-interactive).
 
 \section{Related Works}
 \label{sec:related_works}
@@ -268,7 +268,7 @@ The kernel's implementation
 fundamentally relies upon red-black trees. However, implementing a red-black tree in hardware with a fixed amount of
 memory would be prohibitively expensive.  For this reason, the FLASH
 implementation utilizes a simple unordered array.  Because there are
-typically few tasks eligble to run, the cost of keeping and constantly reorganizing an
+typically few tasks eligible to run, the cost of keeping and constantly reorganizing an
 ordered data structure would outweigh the cost of a simple iteration.
 Further, we must importantly note that this lookup in hardware will be much
 quicker than in software, given that the data is stored in a single
@@ -416,7 +416,7 @@ runtime.  Other fields are for bookkeeping.
 
 \subsection{Summary}
 Together the interface and implementation of FLASH provide an easily
-integrable scheduling module.  The kernel will interface with the hardware
+integratable scheduling module.  The kernel will interface with the hardware
 unit in the same way that the software scheduler does.  Additionally, FLASH
 implements the fundamental algorithm of the current default Linux scheduler
 CFS, which schedules based on priority-weighted virtual runtimes.
@@ -438,7 +438,7 @@ CFS, which schedules based on priority-weighted virtual runtimes.
 
 In testing FLASH, a platform that enables rapid prototyping is essential.
 There are two components to prototyping FLASH; however. The first is the
-choice of devlopment language. While the software component must be written
+choice of development language. While the software component must be written
 in C, there are many choices for a hardware descriptive language. In order
 to quickly iterate on the design of FLASH, a high level hardware descriptive
 language was chosen, SystemC. Unlike Verilog and VHDL which specify hardware
@@ -448,7 +448,7 @@ syntax and a basic notion of time flow, but the code style is still oriented
 towards hardware limitations, excluding constructs like pointers, dynamic
 memory allocation, dynamic stack values, and things generally made possible
 by having a large standard library and a large memory bank. We use Cadence
-C-to-Silocon (CtoS) to compile our SystemC code to RTL, which is then used
+C-to-Silicon (CtoS) to compile our SystemC code to RTL, which is then used
 in our second prototyping component.
 
 Since our design is a hybrid between custom hardware and software, we need a device that is capable of being dynamically reconfigured combined with a Linux-capable processor. Such a platform is the Arrow SoCKiT, powered by Altera's Cyclone V.
@@ -486,8 +486,8 @@ The first step in realizing our design is synthesizing the design using Altera Q
 	\end{center}
 \end{figure}
 
-U-Boot is a bootloader targetted for embedded devices, similar to GRUB for
-desktop Linux computers. U-Boot differs from GRUB in that its boot paramters
+U-Boot is a bootloader targeted for embedded devices, similar to GRUB for
+desktop Linux computers. U-Boot differs from GRUB in that its boot parameters
 are included in the generated binary for the target device, specifying the
 location of the kernel image and a special file called the Device Tree Blob
 (DTB). The DTB is essentially a binary form of the Device Tree Source (DTS),
@@ -618,7 +618,7 @@ a final aspect which must be addressed.
 
 \subsubsection{Performance}
 The first improvement is performance improvements; as the MMU makes memory
-access fast, FLASH must also demonstratebly make scheduling fast. The
+access fast, FLASH must also make scheduling fast. The
 minimum acceptable speed likely depends on the target workload.  It may be
 permissible if FLASH is not much faster so long as it provides significant
 energy efficiency over computing in software. Naturally, slower CPUs will
@@ -633,13 +633,13 @@ systems would be ideal candidates for FLASH adoption.
 Some low power systems (like smartphones) are as complex, if not more so,
 than laptops and desktops. In the case of smartphones and tablets, many contain
 dedicated Intellectual Property cores (IP) that perform certain tasks, like
-network management, video acceleration, usb communication, and so on. These IP
+network management, video acceleration, USB communication, and so on. These IP
 cores typically free up the CPU from performing a processing intensive task
 that it either cannot perform (WiFi communication) or would be tedious (SPI
 communication). We believe that FLASH can benefit such a system. FLASH would
 free up the CPU on smartphones to service the interrupts it constantly
 receives instead of repeating the mundane task of scheduling the many
-background tasks that run on thse devices.
+background tasks that run on these devices.
 
 \subsubsection{Infinite Tasks}
 Since FLASH is a hardware construct, it has a finite amount of memory. Thus,
@@ -693,7 +693,7 @@ functional and not representative of a true desktop Linux distribution.
 
 \subsection{Acts of God}
 One of this paper's authors experienced a few severe technical difficulties
-over the course of research. The largest incidents occured in mid March and
+over the course of research. The largest incidents occurred in mid March and
 early April, essentially costing this author three weeks of productivity.
 The incident in mid March was the malfunction of this author's last
 functioning laptop, at which point the author decided it would be prudent to
@@ -718,11 +718,11 @@ This process, however, was not straightforward.  Because CtoS only supports
 using the subscription version of Quartus and authors did not have enough
 institutional clout to have this expensive license installed on the same
 server as the CtoS tool, the authors were forced to complete this
-compilation to RTL using Quartus's main competitor: Xilinx's Integrated
+compilation to RTL using Quartus' main competitor: Xilinx's Integrated
 Synthesis Environment (ISE).  This resulted in some non-optimized synthesis.
 
 Overall, the experience of using CtoS was pleasant, especially as it allowed
-some design-space exploration, making some area vs timing tradeoffs.
+some design-space exploration, making some area vs. timing tradeoffs.
 Because our design only pushed the area capacity of the board with a high
 static task limit, most optimizations erred on the side of timing in order
 to take full advantage of the board's speed.  There was some trouble
@@ -749,8 +749,8 @@ memory coherency with the processor while it is executing, as shown in
 \ref{fig:dma_diag}. This overhead is justified because the processor can
 continue executing while the controller interfaces with the device to
 read/store data. The advantage of DMA in the context of FLASH is that
-instead of performing an \texttt{ioread}/\texttt{iowrite} everytime a scheduler event occurs,
-the processor and device can use the DMA as a liason and access the data
+instead of performing an \texttt{ioread}/\texttt{iowrite} every time a scheduler event occurs,
+the processor and device can use the DMA as a liaison and access the data
 when they are ready.
 
 This does not negate the necessity of retrieving a new process immediately
@@ -771,7 +771,7 @@ information of these sizes is not made publically available, and would
 likely require us to get in contact with engineers at Intel, AMD, or ARM.
 
 \subsection{SMP Support}
-The current implementation of FLASH has no knowledge of multiple processors. This is problematic bacause only one task can be running at a time from the point of view of FLASH. However, enabling SMP support in FLASH is not as simple as informing FLASH of the number of CPUs in a register, the hardware also needs to be able to make scheduling decisions for each of the processors efficiently. Naturally, this increases the logic usage for the scheduling kernel, but ideally the number of tasks supported in memory need not be increased, thus keeping the memory usage, and potentially area usage, still low and competitive with other CPU units.
+The current implementation of FLASH has no knowledge of multiple processors. This is problematic because only one task can be running at a time from the point of view of FLASH. However, enabling SMP support in FLASH is not as simple as informing FLASH of the number of CPUs in a register, the hardware also needs to be able to make scheduling decisions for each of the processors efficiently. Naturally, this increases the logic usage for the scheduling kernel, but ideally the number of tasks supported in memory need not be increased, thus keeping the memory usage, and potentially area usage, still low and competitive with other CPU units.
 
 \section{Conclusion}
 \label{sec:conclusion}
