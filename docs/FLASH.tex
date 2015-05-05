@@ -6,6 +6,7 @@
 \usepackage{changepage}
 \usepackage{lipsum}
 \usepackage{booktabs}
+\usepackage{booktabs}
 
 \title{FLASH\\Fast Linux Advanced Scheduler Hardware}
 \author{
@@ -30,15 +31,46 @@ As accelerators become more common and necessary as a way to continue Moore's La
 \label{sec:intro}
 Desktop operating systems are interactive, meaning that they present a responsive and fluid experience to users. To acheive this balance of performance and responsiveness, desktop operating systems are called preemptable, meaning that the execution of processes can be interrupted by another process. By contrast, server operating systems are batch oriented, meaning that processes are not preempted: a process continues until it exits or is forced to exit, at which point another process starts computation. This preemption is one of the performance factors that contribute to greater CPU utilization on server operating systems as opposed to desktop operating systems. The reason why preemption is detrimental to CPU utilization is a combination of a few different reasons.
 
-\paragraph{TLB and Cache}
+\subsection{TLB and Cache}
 The translation lookaside buffer (TLB) is a hardware structure that assists the memory management unit (MMU) of the CPU in translating virtual addresses into physical addresses. The TLB serves as a cache to look up commonly used virtual addresses and return the corresponding physical address. In computationally expensive portions of code, this unit is advantageous as it prevents unnecessary page lookups when the code is accessing small regions of memory. Likewise, the cache on a CPU provides good speedups to these kinds of programs by containing the actual data referenced in these virtual memory locations.
 
 These structures have been shown to work very well, despite their small sizes. However whenever another task takes residence in the processor, the cache and TLB are likely invalidated, thus leading to a period of degraded performance. A context switch is the process wherein the operating system saves the state of the currently executing task and schedules in a new task to execute. In order to make a decision on which task is selected next, a scheduler is invoked. Depending on the needs of the particular operatin system, this scheduler can be a simple queue or a complex multi-queue priority based scheduler. If the scheduler is sufficiently complex, even if it chooses the same task to resume running, it may already invalidate the cache and TLB of the processor. The new resident process must now wait for expensive memory accesses to bring in valid TLB entries and cache values. This results in less than ideal processor utilization.
 
 It is also difficult to make real time scheduling guarantees. In applications such as video or audio playback, it is necessary that the playback process be scheduled consistently to ensure jitter-free playback \cite{groves2009bfs}. Schedulers typically run periodically in an operating system to ensure interactivity. If they run too infrequently, a video processing task may not obtain enough cycles to produce a consistent amount of frames. If they run too frequently, then they consume too many system resources and negatively impact scheduling. FLASH is able to solve this conflicting requirement. Since it is a dedicated hardware unit, FLASH does not consume any CPU resources. Additionally, since its decision making is time bounded, it can make real-time scheduling guarantees.
 
-\paragraph{Raw Throughput}
-In our research, we focus on scheduling in the Linux kernel. In order to determine the necessity of FLASH, we performed benchmarking based on the CFS scheduler, which we talk more about in Section \ref{sec:sched_in_kernel}. To determine the overhead incurred due to the CFS scheduler, we ran the \verb|hackbench| scheduler stress test \cite{hackbench}. \verb|hackbench| operates by launching a large number of processes or threads and passes data between them. In order to measure the amount of CPU time spent in the scheduler subsystem, \verb|oprofile| was used to profile the entire Linux system \cite{oprofile}.
+\subsection{Raw Throughput}
+In our research, we focus on scheduling in the Linux kernel. In order to determine the limits of the improvements that FLASH can bring, we performed benchmarking based on the CFS scheduler, which we talk more about in Section \ref{sec:sched_in_kernel}. In order to determine the overhead incurred due to the CFS scheduler, we ran the \verb|hackbench| scheduler stress test \cite{hackbench}. \verb|hackbench| operates by launching a large number of threads or processes and passing data between them. In order to measure the amount of CPU time spent in the scheduler subsystem, \verb|oprofile| was used to profile the entire Linux kernel \cite{oprofile}.
+
+Our testing environment consisted of an Intel\textsuperscript{\textregistered} Core\textsuperscript{TM} i7-4810MQ processor, operating at 3.25 GHz. We ran \verb|operf| with the \verb|-k| and \verb|--system-wide| options, before launching \verb|hackbench| with the \verb|-l 100000| option, to ensure that the benchmark ran for a sufficiently long amount of time. The process of starting \verb|operf| and \verb|hackbench| was repeated three times to reduce variability, and the average of the three runs was taken. To obtain the results, \verb|opreport| was run with the following options: \verb|--merge all| \verb|--symbols| \verb|--image-path| \verb|-l| \verb|-e sync_buffer,add_event_entry,dd_sample_entry|. Finally, we filtered out irrelevant results by searching for entries with fair in their name, and identified the class scheduler functions, as shown in Table \ref{tab:cfs_usage}.
+
+\begin{table}[h]
+\begin{center}
+	\begin{tabular}{@{}ll@{}}
+		\toprule
+		CPU Time (\%)      & Symbol Name             \\ \midrule
+		0.2811             & pick\_next\_task\_fair  \\
+		0.2670             & enqueue\_task\_fair     \\
+		0.2197             & dequeue\_task\_fair     \\
+		0.1866             & select\_task\_rq\_fair  \\
+		0.0919             & task\_waking\_fair      \\
+		0.0077             & idle\_enter\_fair       \\
+		0.0071             & migrate\_task\_rq\_fair \\
+		0.0034             & put\_prev\_task\_fair   \\
+		9.9e-05            & task\_tick\_fair        \\
+		5.8e-06            & task\_move\_group\_fair \\
+		\textbf{1.0646048} & \textbf{Total}          \\ \bottomrule
+	\end{tabular}
+	\caption{The CPU usage of the various functions used by CFS to accomplish its task.}
+	\label{tab:cfs_usage}
+\end{center}
+\end{table}
+
+Overall, just 1.06\% of CPU time was devoted to the CFS scheduler. While this may seem like a negligible amount of time, the CPU presented 8 logical cores for scheduling and operated at 3.25 GHz, equating to:
+\begin{equation*}
+	3.25\ \text{GHz}*0.0106*8 = 276.8\ \text{MHz}
+\end{equation*}
+
+276.8 million cycles wasted each second. FLASH is intended to return most of those cycles back to the CPU to perform useful work.
 
 \section{Scheduling in the Kernel}
 \label{sec:sched_in_kernel}
